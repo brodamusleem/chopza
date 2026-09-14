@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { loginSchema, type LoginValues } from '../schemas/login.schema'
-import { login } from '../api/auth.api'
+import { getProfileRole, login } from '../api/auth.api'
 import { useAuthStore } from '../store/authStore'
 export function LoginForm() {
   const navigate = useNavigate()
@@ -23,6 +23,10 @@ export function LoginForm() {
     try {
       const { session } = await login(values)
       useAuthStore.getState().setSession(session)
+      const profileRole = session?.user
+        ? await getProfileRole(session.user.id)
+        : null
+      useAuthStore.getState().setProfileRole(profileRole)
       const state: unknown = location.state
       const from =
         state && typeof state === 'object' && 'from' in state
@@ -33,7 +37,9 @@ export function LoginForm() {
           from.startsWith('/') &&
           !from.startsWith('//')
           ? from
-          : '/vendors',
+          : profileRole === 'admin'
+            ? '/admin/dashboard'
+            : '/vendors',
         { replace: true },
       )
     } catch (error) {

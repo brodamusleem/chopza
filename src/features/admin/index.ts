@@ -1,1 +1,2 @@
-export { AdminOverview } from './components/AdminOverview'
+export const adminDashboardRoute = () =>
+  import('./components/AdminDashboardPage')

@@ -5,6 +5,7 @@ import type { AuthState } from '../types'
 export const useAuthStore = create<
   AuthState & {
     setSession: (session: Session | null) => void
+    setProfileRole: (role: unknown) => void
     setError: (error: string) => void
   }
 >((set) => ({
@@ -24,6 +25,8 @@ export const useAuthStore = create<
       error: null,
     })
   },
+  setProfileRole: (role) =>
+    set({ role: isRole(role) ? role : null }),
   setError: (error) =>
     set({ user: null, session: null, role: null, ready: true, error }),
 }))

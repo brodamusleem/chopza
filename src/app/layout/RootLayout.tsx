@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { ShoppingBag, UtensilsCrossed } from 'lucide-react'
 import { useCart } from '@/features/ordering'
 import { useAuth, logout } from '@/features/auth'
@@ -8,12 +8,13 @@ import { toast } from 'sonner'
 export function RootLayout() {
   const { items } = useCart()
   const { user, role } = useAuth()
+  const isAdmin = useLocation().pathname.startsWith('/admin')
   return (
     <div className="min-h-screen bg-background">
       <a href="#main" className="sr-only focus:not-sr-only">
         Skip to content
       </a>
-      <header className="border-b bg-card">
+      {!isAdmin && <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-5 py-5">
           <Link
             to="/"
@@ -27,6 +28,9 @@ export function RootLayout() {
             className="flex flex-wrap items-center gap-5 text-sm font-medium"
           >
             <NavLink to="/vendors">Restaurants</NavLink>
+            {role === 'admin' && (
+              <NavLink to="/admin/dashboard">Admin dashboard</NavLink>
+            )}
             {role === 'vendor' && (
               <NavLink to="/vendor/dashboard">Vendor dashboard</NavLink>
             )}
@@ -62,8 +66,8 @@ export function RootLayout() {
             )}
           </nav>
         </div>
-      </header>
-      {!supabase && (
+      </header>}
+      {!isAdmin && !supabase && (
         <div className="border-b bg-secondary px-5 py-2 text-center text-xs text-muted-foreground">
           Project preview · Sample menus · Connect Supabase to enable accounts
           and live tracking

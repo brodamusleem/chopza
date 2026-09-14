@@ -12,9 +12,11 @@ dist
 dist-ssr
 *.local
 .env
+.env.local
 .env.*
 !.env.example
 coverage
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*
