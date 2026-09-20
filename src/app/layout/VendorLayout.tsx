@@ -1,15 +1,21 @@
-import { Outlet } from 'react-router'
-import { RoleGuard } from '@/features/auth'
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import { useEffect, useState } from 'react'
+import { LayoutDashboard, ShoppingBag, UtensilsCrossed, Settings, Wallet, Star, Tag, LogOut } from 'lucide-react'
+import { RoleGuard, logout, useAuth } from '@/features/auth'
 import { ROLES } from '@/shared/constants/roles'
-export function VendorLayout() {
-  return (
-    <RoleGuard roles={[ROLES.VENDOR]}>
-      <div className="space-y-6">
-        <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Vendor workspace
-        </p>
-        <Outlet />
-      </div>
-    </RoleGuard>
-  )
-}
+import { useVendorApplicationStatus } from '@/features/vendors/hooks/useVendorApplicationStatus'
+import { getVendorId, getVendorStats } from '@/features/vendors/api/vendorDashboard.api'
+import { getProfile } from '@/features/auth/api/auth.api'
+import { requireSupabase } from '@/shared/lib/supabaseClient'
+import { ModeToggle } from '@/shared/components/ModeToggle'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/shared/components/ui/sidebar'
+import { toast } from 'sonner'
+
+const groups: { label: string; items: { label: string; to: string; icon: typeof LayoutDashboard; pending?: boolean }[] }[] = [{ label: 'MAIN', items: [{ label: 'Dashboard', to: '/vendor/dashboard', icon: LayoutDashboard }] }, { label: 'ORDERS', items: [{ label: 'Orders', to: '/vendor/orders', icon: ShoppingBag, pending: true }] }, { label: 'MENU', items: [{ label: 'Menu Management', to: '/vendor/menu', icon: UtensilsCrossed }] }, { label: 'BUSINESS', items: [{ label: 'Profile & Settings', to: '/vendor/settings', icon: Settings }, { label: 'Payouts', to: '/vendor/payouts', icon: Wallet }, { label: 'Reviews', to: '/vendor/reviews', icon: Star }, { label: 'Promotions', to: '/vendor/promotions', icon: Tag }] }]
+function VendorShell() { const user = useAuth((state) => state.user); const navigate = useNavigate(); const location = useLocation(); const [name, setName] = useState('Your business'); const [avatar, setAvatar] = useState<string | null>(null); const [pending, setPending] = useState(0)
+  useEffect(() => { if (!user) return; let active = true; void (async () => { const vendorId = await getVendorId(user.id); const profile = await getProfile(user.id); if (!vendorId || !active) return; const stats = await getVendorStats(vendorId); if (active) { setPending(stats.pendingOrders); setName(profile?.full_name || 'Your business'); setAvatar(profile?.avatar_url ?? null) }; const channel = requireSupabase().channel(`vendor-sidebar-${vendorId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `vendor_id=eq.${vendorId}` }, () => void getVendorStats(vendorId).then((result) => active && setPending(result.pendingOrders))).subscribe(); return channel })().then((channel) => { if (!active && channel) void requireSupabase().removeChannel(channel) }).catch(() => {}); return () => { active = false } }, [user])
+  const initials = name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()
+  return <SidebarProvider><div className="flex min-h-screen w-full"><Sidebar><SidebarHeader className="border-b border-sidebar-border"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-full bg-orange-500 font-bold text-white">C</div><div className="group-data-[collapsible=icon]:hidden"><p className="font-semibold text-white">Chopza</p><p className="text-xs text-sidebar-foreground/60">Vendor portal</p></div></div></SidebarHeader><SidebarContent className="pt-5">{groups.map((group) => <SidebarGroup key={group.label}><SidebarGroupLabel>{group.label}</SidebarGroupLabel><SidebarMenu>{group.items.map(({ label, to, icon: Icon, pending: showPending }) => <SidebarMenuItem key={to}><SidebarMenuButton asChild tooltip={label} className={location.pathname === to ? 'bg-sidebar-accent text-white' : ''}><NavLink to={to}><Icon className="size-4" /><span className="group-data-[collapsible=icon]:hidden">{label}</span>{showPending && pending > 0 && <SidebarMenuBadge>{pending}</SidebarMenuBadge>}</NavLink></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>)}</SidebarContent><SidebarFooter className="border-t border-sidebar-border"><div className="flex items-center gap-2 px-2 py-2"><Avatar className="size-8"><AvatarImage src={avatar ?? undefined} /><AvatarFallback>{initials}</AvatarFallback></Avatar><div className="min-w-0 group-data-[collapsible=icon]:hidden"><p className="truncate text-sm font-medium text-white">{name}</p><p className="text-xs text-sidebar-foreground/60">Vendor</p></div></div><div className="mt-2 flex items-center justify-between group-data-[collapsible=icon]:hidden"><ModeToggle /><button className="flex items-center gap-2 text-sm text-sidebar-foreground/70 hover:text-white" onClick={() => void logout().then(() => navigate('/login')).catch((error: unknown) => toast.error(error instanceof Error ? error.message : 'Unable to sign out.'))}><LogOut className="size-4" />Sign out</button></div></SidebarFooter></Sidebar><main className="min-w-0 flex-1"><header className="flex h-16 items-center border-b bg-card px-4 sm:px-6"><SidebarTrigger /><span className="ml-2 font-semibold">Vendor portal</span></header><div className="w-full px-5 py-8"><Outlet /></div></main></div></SidebarProvider> }
+export function VendorLayout() { const location = useLocation(); return <RoleGuard roles={[ROLES.VENDOR]}><VendorApplicationGate path={location.pathname} /></RoleGuard> }
+function VendorApplicationGate({ path }: { path: string }) { const { application, status, isLoading, error } = useVendorApplicationStatus(); if (isLoading) return <p role="status">Loading your application...</p>; if (error) return <p role="alert">{error.message}</p>; if (!application) return path === '/vendor/onboarding' ? <Outlet /> : <Navigate to="/vendor/onboarding" replace />; if (path === '/vendor/onboarding' && status === 'approved') return <Navigate to="/vendor/dashboard" replace />; if (status === 'pending' && path !== '/vendor/pending-review') return <Navigate to="/vendor/pending-review" replace />; if (status === 'rejected' && path !== '/vendor/application-rejected') return <Navigate to="/vendor/application-rejected" replace />; if (status === 'suspended' && path !== '/vendor/application-status') return <Navigate to="/vendor/application-status" replace />; return status === 'approved' ? <VendorShell /> : <Outlet /> }

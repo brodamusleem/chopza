@@ -1,13 +1,18 @@
 import { Outlet } from 'react-router'
-import { AdminNavbar } from './AdminNavbar'
+import { AdminSidebar } from './AdminSidebar'
+import { AdminTopBar } from './AdminTopBar'
+import { SidebarProvider } from '@/shared/components/ui/sidebar'
 
 export function AdminLayout() {
   return (
-    <div className="min-h-[calc(100vh-6rem)]">
-      <AdminNavbar />
-      <div className="mx-auto max-w-7xl px-5 py-8">
-        <Outlet />
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AdminSidebar />
+        <div className="min-w-0 flex-1">
+          <AdminTopBar />
+          <div className="w-full px-5 py-8"><Outlet /></div>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search } from 'lucide-react'
+import { Link } from 'react-router'
 import {
   Card,
   CardContent,
@@ -92,6 +93,7 @@ export function VendorManagementTable({
                 <TableHead>Restaurant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Review</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,7 +102,7 @@ export function VendorManagementTable({
               ) : !rows.length ? (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={4}
                     className="py-10 text-center text-muted-foreground"
                   >
                     No vendors match these filters.
@@ -118,6 +120,7 @@ export function VendorManagementTable({
                         timeZone: 'Africa/Lagos',
                       })}
                     </TableCell>
+                    <TableCell><Link className="text-primary underline" to={`/admin/vendors/${vendor.id}`}>View</Link></TableCell>
                   </TableRow>
                 ))
               )}

@@ -1,9 +1,15 @@
-import { VendorMenuEditor } from '../components/VendorMenuEditor'
-export function Component() {
-  return (
-    <>
-      <h1 className="text-3xl font-semibold">Restaurant dashboard</h1>
-      <VendorMenuEditor />
-    </>
-  )
-}
+import { useEffect, useState } from 'react'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { ShoppingBag, Clock3, WalletCards, Utensils } from 'lucide-react'
+import { useAuth } from '@/features/auth'
+import { getVendorId, getVendorOrdersPerDay, getVendorStats } from '../api/vendorDashboard.api'
+import { requireSupabase } from '@/shared/lib/supabaseClient'
+import { formatNaira } from '@/shared/lib/currency'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/shared/components/ui/chart'
+import { toast } from 'sonner'
+const config = { orders: { label: 'Orders', color: 'var(--primary)' } } satisfies ChartConfig
+export function Component() { const user = useAuth((state) => state.user); const [stats, setStats] = useState({ pendingOrders: 0, todayOrders: 0, todayRevenue: 0, activeMenuItems: 0 }); const [chart, setChart] = useState<{ label: string; orders: number }[]>([])
+  useEffect(() => { if (!user) return; let active = true; let channel: ReturnType<ReturnType<typeof requireSupabase>['channel']> | undefined; const load = async () => { const id = await getVendorId(user.id); if (!id) return; const [nextStats, nextChart] = await Promise.all([getVendorStats(id), getVendorOrdersPerDay(id)]); if (active) { setStats(nextStats); setChart(nextChart) }; channel = requireSupabase().channel(`vendor-dashboard-${id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `vendor_id=eq.${id}` }, (payload) => { const row = payload.new as { status?: string }; if (row.status === 'pending') toast.success('New order received!'); void Promise.all([getVendorStats(id), getVendorOrdersPerDay(id)]).then(([s, c]) => { if (active) { setStats(s); setChart(c) } }) }).subscribe() }; void load(); return () => { active = false; if (channel) void requireSupabase().removeChannel(channel) } }, [user])
+  const cards = [{ label: 'Pending orders', value: stats.pendingOrders, icon: Clock3 }, { label: "Today's orders", value: stats.todayOrders, icon: ShoppingBag }, { label: "Today's revenue", value: formatNaira(stats.todayRevenue * 100), icon: WalletCards }, { label: 'Active menu items', value: stats.activeMenuItems, icon: Utensils }]
+  return <div className="space-y-6"><div><h1 className="text-3xl font-semibold">Dashboard</h1><p className="text-muted-foreground">A live view of your restaurant.</p></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(({ label, value, icon: Icon }) => <Card key={label}><CardContent className="flex items-center justify-between pt-6"><div><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div><Icon className="size-5 text-primary" /></CardContent></Card>)}</div><Card><CardHeader><CardTitle>Orders over the last 7 days</CardTitle><CardDescription>Daily order volume, including today.</CardDescription></CardHeader><CardContent><ChartContainer config={config} className="h-72 w-full"><BarChart accessibilityLayer data={chart}><CartesianGrid vertical={false} /><XAxis dataKey="label" tickLine={false} axisLine={false} /><YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} /><ChartTooltip content={<ChartTooltipContent />} /><Bar dataKey="orders" fill="var(--color-orders)" radius={[4, 4, 0, 0]} /></BarChart></ChartContainer></CardContent></Card></div> }

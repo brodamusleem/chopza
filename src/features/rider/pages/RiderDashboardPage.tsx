@@ -1,11 +1,7 @@
-import { LocationBroadcaster } from '../components/LocationBroadcaster'
-import { RiderOrderQueue } from '../components/RiderOrderQueue'
-export function Component() {
-  return (
-    <>
-      <h1 className="text-3xl font-semibold">Your deliveries</h1>
-      <RiderOrderQueue />
-      <LocationBroadcaster />
-    </>
-  )
-}
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
+import { useAuth } from '@/features/auth'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { getRiderApplication, getRiderDashboard } from '../api/rider.api'
+import { formatNaira } from '@/shared/lib/currency'
+export function Component() { const { user } = useAuth(); const [data, setData] = useState<{ today: number; week: number; fee: number; active: unknown; online: boolean }>(); useEffect(() => { if (!user) return; void Promise.all([getRiderDashboard(user.id), getRiderApplication(user.id)]).then(([dashboard, rider]) => setData({ ...dashboard, online: rider?.is_online ?? false })) }, [user]); if (!data) return <p>Loading dashboard…</p>; return <div className="space-y-6"><div><h1 className="text-3xl font-semibold">Dashboard</h1><p className="text-muted-foreground">Your delivery activity at a glance.</p></div><div className="grid gap-4 md:grid-cols-3"><Card><CardHeader><CardTitle>Today&apos;s deliveries</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{data.today}</CardContent></Card><Card><CardHeader><CardTitle>This week&apos;s deliveries</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{data.week}</CardContent></Card><Card><CardHeader><CardTitle>Estimated earnings today</CardTitle></CardHeader><CardContent><p className="text-3xl font-semibold">{formatNaira(data.today * data.fee * 100)}</p><p className="text-sm text-muted-foreground">Estimated — not a real payout</p></CardContent></Card></div>{!data.online && <Card><CardContent className="py-6">You are offline. Turn on availability in the sidebar to receive delivery jobs.</CardContent></Card>}{data.online && data.active && <Card><CardContent className="py-6">You have an active delivery. <Link className="underline" to="/rider/active">Open delivery</Link></CardContent></Card>}</div> }

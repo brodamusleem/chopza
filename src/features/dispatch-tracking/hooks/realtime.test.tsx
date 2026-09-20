@@ -106,4 +106,5 @@ describe('Realtime channel lifecycle', () => {
     unmount()
     expect(mock.removeChannel).toHaveBeenCalledWith(channel)
   })
+
 })

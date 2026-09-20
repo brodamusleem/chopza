@@ -9,7 +9,7 @@ export function Cart() {
       <div className="rounded-xl border p-8">
         <p>Your cart is waiting for something delicious.</p>
         <Link
-          to="/vendors"
+          to="/"
           className="mt-4 inline-block font-medium text-primary underline"
         >
           Explore restaurants

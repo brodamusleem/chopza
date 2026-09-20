@@ -1,70 +1,30 @@
-import type { MenuItem, Vendor } from '../types'
-// Explicit demo fixtures, never presented as live restaurants or database responses.
-export const demoVendors: Vendor[] = [
-  {
-    id: 'kano-kitchen',
-    name: 'Kano Kitchen',
-    cuisine: 'Northern favourites',
-    area: 'Nassarawa',
-    deliveryMinutes: 30,
-  },
-  {
-    id: 'savannah-grill',
-    name: 'Savannah Grill',
-    cuisine: 'Grills & rice',
-    area: 'Tarauni',
-    deliveryMinutes: 40,
-  },
-  {
-    id: 'city-bites',
-    name: 'City Bites',
-    cuisine: 'Quick bites',
-    area: 'Fagge',
-    deliveryMinutes: 25,
-  },
-]
-const demoMenu: MenuItem[] = [
-  {
-    id: 'tuwo',
-    vendorId: 'kano-kitchen',
-    name: 'Tuwo shinkafa & miyan kuka',
-    description: 'A northern classic, freshly prepared.',
-    priceKobo: 250000,
-    available: true,
-  },
-  {
-    id: 'masa',
-    vendorId: 'kano-kitchen',
-    name: 'Masa & pepper sauce',
-    description: 'Soft rice cakes with a little heat.',
-    priceKobo: 120000,
-    available: true,
-  },
-  {
-    id: 'suya',
-    vendorId: 'savannah-grill',
-    name: 'Beef suya',
-    description: 'Spiced grilled beef with onions.',
-    priceKobo: 300000,
-    available: true,
-  },
-  {
-    id: 'jollof',
-    vendorId: 'savannah-grill',
-    name: 'Jollof rice & chicken',
-    description: 'Smoky rice with grilled chicken.',
-    priceKobo: 350000,
-    available: true,
-  },
-  {
-    id: 'wrap',
-    vendorId: 'city-bites',
-    name: 'Chicken wrap',
-    description: 'Chicken, fresh vegetables and house sauce.',
-    priceKobo: 220000,
-    available: true,
-  },
-]
-export function getDemoMenu(vendorId: string) {
-  return demoMenu.filter((item) => item.vendorId === vendorId)
+import { requireSupabase } from '@/shared/lib/supabaseClient'
+import type { Vendor } from '../types'
+
+export async function getApprovedVendors(): Promise<Vendor[]> {
+  const client = requireSupabase()
+  const { data, error } = await client
+    .from('vendors')
+    .select('id, name, description, logo_url, address, service_area_id')
+    .eq('status', 'approved')
+    .order('name')
+  if (error) throw error
+  if (!data?.length) return []
+
+  const areaIds = data
+    .map((vendor) => vendor.service_area_id)
+    .filter((id): id is string => Boolean(id))
+  const { data: areas, error: areaError } = areaIds.length
+    ? await client.from('service_areas').select('id, name').in('id', areaIds)
+    : { data: [], error: null }
+  if (areaError) throw areaError
+  const areaNames = new Map((areas ?? []).map((area) => [area.id, area.name]))
+
+  return data.map((vendor) => ({
+    id: vendor.id,
+    name: vendor.name,
+    description: vendor.description,
+    logoUrl: vendor.logo_url,
+    area: areaNames.get(vendor.service_area_id ?? '') ?? vendor.address,
+  }))
 }

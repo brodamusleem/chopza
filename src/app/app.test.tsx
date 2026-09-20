@@ -2,7 +2,6 @@ import {
   act,
   cleanup,
   configure,
-  fireEvent,
   render,
   screen,
 } from '@testing-library/react'
@@ -16,7 +15,7 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-it('boots without credentials, navigates menus, updates cart and guards dashboards', async () => {
+it('boots without credentials and exposes role entry points', async () => {
   vi.stubGlobal(
     'matchMedia',
     vi.fn(() => ({
@@ -27,16 +26,9 @@ it('boots without credentials, navigates menus, updates cart and guards dashboar
   )
   render(<App />)
   await screen.findByRole('heading', { name: /Your favourites/ })
-  fireEvent.click(screen.getByRole('link', { name: 'Explore restaurants' }))
-  await screen.findByRole('heading', { name: 'What are you craving?' })
-  fireEvent.click(screen.getByRole('link', { name: /Kano Kitchen/ }))
-  await screen.findByRole('heading', { name: 'Kano Kitchen', level: 1 })
-  fireEvent.click(screen.getAllByRole('button', { name: 'Add to cart' })[0])
-  fireEvent.click(screen.getByRole('link', { name: 'Cart (1)' }))
-  await screen.findByRole('heading', { name: 'Your cart' })
-  expect(
-    screen.getByRole('heading', { name: 'Tuwo shinkafa & miyan kuka' }),
-  ).toBeDefined()
+  expect(screen.getByRole('link', { name: 'Register as a vendor' }).getAttribute('href')).toBe('/register/vendor')
+  expect(screen.getByRole('link', { name: 'Register as a rider' }).getAttribute('href')).toBe('/register/rider')
+  expect(screen.queryByText(/Cart/)).toBeNull()
   await act(async () => {
     await router.navigate('/vendor/dashboard')
   })

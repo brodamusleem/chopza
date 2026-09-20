@@ -28,10 +28,26 @@ export function LoginForm() {
         : null
       useAuthStore.getState().setProfileRole(profileRole)
       const state: unknown = location.state
+      const stateRole =
+        state && typeof state === 'object' && 'role' in state
+          ? state.role
+          : null
+      const intendedRole =
+        stateRole ?? sessionStorage.getItem('chopza-pending-signup-role')
       const from =
         state && typeof state === 'object' && 'from' in state
           ? state.from
           : null
+      if (intendedRole === 'vendor' && profileRole !== 'vendor') {
+        setError('root', {
+          message:
+            'This account is not configured as a vendor yet. Apply the latest Supabase migrations, then use a new vendor signup or update this account profile role.',
+        })
+        return
+      }
+      if (intendedRole === profileRole) {
+        sessionStorage.removeItem('chopza-pending-signup-role')
+      }
       navigate(
         typeof from === 'string' &&
           from.startsWith('/') &&
@@ -39,7 +55,11 @@ export function LoginForm() {
           ? from
           : profileRole === 'admin'
             ? '/admin/dashboard'
-            : '/vendors',
+            : profileRole === 'vendor'
+              ? '/vendor/dashboard'
+              : profileRole === 'rider'
+                ? '/rider/dashboard'
+            : '/',
         { replace: true },
       )
     } catch (error) {

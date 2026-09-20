@@ -8,11 +8,11 @@ export async function login(values: LoginValues) {
   if (error) throw error
   return data
 }
-export async function register({ name, email, password }: RegisterValues) {
+export async function register({ full_name, email, password, role = 'customer' }: RegisterValues & { role?: Role }) {
   const { data, error } = await requireSupabase().auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: { data: { full_name, role } },
   })
   if (error) throw error
   return data
@@ -30,4 +30,14 @@ export async function getProfileRole(userId: string): Promise<Role | null> {
     .maybeSingle()
   if (error) throw error
   return data?.role ?? null
+}
+
+export async function getProfile(userId: string) {
+  const { data, error } = await requireSupabase()
+    .from('profiles')
+    .select('full_name, avatar_url, role')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data
 }

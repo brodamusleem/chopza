@@ -1,15 +1,14 @@
-import { Outlet } from 'react-router'
-import { RoleGuard } from '@/features/auth'
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router'
+import { useAuth, RoleGuard, logout } from '@/features/auth'
 import { ROLES } from '@/shared/constants/roles'
-export function RiderLayout() {
-  return (
-    <RoleGuard roles={[ROLES.RIDER]}>
-      <div className="space-y-6">
-        <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Rider workspace
-        </p>
-        <Outlet />
-      </div>
-    </RoleGuard>
-  )
-}
+import { Button } from '@/shared/components/ui/button'
+import { Switch } from '@/shared/components/ui/switch'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/shared/components/ui/sidebar'
+import { useRiderApplicationStatus } from '@/features/rider/hooks/useRiderApplicationStatus'
+import { setRiderOnline } from '@/features/rider/api/rider.api'
+import { Component as RiderOnboarding } from '@/features/rider/pages/RiderOnboardingPage'
+import { toast } from 'sonner'
+const links = [['Dashboard', '/rider/dashboard'], ['Available Jobs', '/rider/jobs'], ['Active Delivery', '/rider/active'], ['History', '/rider/history'], ['Profile & Settings', '/rider/settings'], ['Payouts', '/rider/payouts'], ['Ratings', '/rider/ratings']]
+function Shell() { const { user } = useAuth(); const { application, refetch } = useRiderApplicationStatus(); return <SidebarProvider><div className="flex min-h-screen w-full"><Sidebar><SidebarHeader><p className="font-semibold text-white">Chopza <span className="text-sidebar-foreground/60">Rider</span></p><div className="mt-4 flex items-center justify-between"><span className="text-sm">Online</span><Switch checked={application?.is_online ?? false} onCheckedChange={(value) => { if (!application) return; void setRiderOnline(application.id, value).then(refetch).catch(() => toast.error('Unable to update availability.')) }} /></div></SidebarHeader><SidebarContent>{links.map(([label, to]) => <SidebarGroup key={label}><SidebarMenu><SidebarMenuItem><SidebarMenuButton asChild tooltip={label}><NavLink to={to}><span>{label}</span></NavLink></SidebarMenuButton></SidebarMenuItem></SidebarMenu></SidebarGroup>)}</SidebarContent><SidebarFooter><p className="text-sm">{user?.email}</p><Button variant="ghost" onClick={() => void logout()}>Sign out</Button></SidebarFooter></Sidebar><main className="min-w-0 flex-1"><header className="flex h-16 items-center border-b px-5"><SidebarTrigger /><span className="ml-3 font-semibold">Rider workspace</span></header><div className="w-full px-5 py-8"><Outlet /></div></main></div></SidebarProvider> }
+function Gate() { const location = useLocation(); const { application, status, isLoading, error, refetch } = useRiderApplicationStatus(); if (isLoading) return <p>Loading rider account…</p>; if (error) return <p role="alert">{error.message}</p>; if (!application) return location.pathname === '/rider/onboarding' ? <RiderOnboarding done={refetch} /> : <Navigate to="/rider/onboarding" replace />; if (status === 'rejected') return <RiderOnboarding application={application} done={refetch} />; if (status === 'pending') return <p>Your rider application is under review.</p>; if (status === 'suspended') return <p>Your rider account is suspended. Contact support.</p>; return <Shell /> }
+export function RiderLayout() { return <RoleGuard roles={[ROLES.RIDER]}><Gate /></RoleGuard> }

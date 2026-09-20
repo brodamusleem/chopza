@@ -12,11 +12,22 @@ export function useAdminQuery<T>(query: () => Promise<T>) {
     const current = Symbol('admin-query')
     generation.current = current
     setResult((previous) => ({ ...previous, isLoading: true, error: null }))
+    const timeout = window.setTimeout(() => {
+      if (mounted.current && current === generation.current) {
+        setResult((previous) => ({
+          ...previous,
+          isLoading: false,
+          error: new Error('This request timed out. Check your Supabase connection and try again.'),
+        }))
+      }
+    }, 10000)
     try {
       const data = await query()
+      window.clearTimeout(timeout)
       if (mounted.current && current === generation.current)
         setResult({ data, isLoading: false, error: null })
     } catch (cause) {
+      window.clearTimeout(timeout)
       if (mounted.current && current === generation.current)
         setResult((previous) => ({
           ...previous,

@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       menu_items: {
         Row: {
+          category: string | null
           created_at: string
           description: string | null
           id: string
@@ -51,6 +52,7 @@ export type Database = {
           vendor_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -61,6 +63,7 @@ export type Database = {
           vendor_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -155,11 +158,14 @@ export type Database = {
         Row: {
           cart_group_id: string
           created_at: string
+          current_lat: number | null
+          current_lng: number | null
           customer_id: string
           delivery_address: string
           delivery_latitude: number | null
           delivery_longitude: number | null
           id: string
+          location_updated_at: string | null
           rider_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
@@ -169,11 +175,14 @@ export type Database = {
         Insert: {
           cart_group_id?: string
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           customer_id: string
           delivery_address: string
           delivery_latitude?: number | null
           delivery_longitude?: number | null
           id?: string
+          location_updated_at?: string | null
           rider_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount: number
@@ -183,11 +192,14 @@ export type Database = {
         Update: {
           cart_group_id?: string
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           customer_id?: string
           delivery_address?: string
           delivery_latitude?: number | null
           delivery_longitude?: number | null
           id?: string
+          location_updated_at?: string | null
           rider_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
@@ -218,30 +230,142 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          app_name: string
+          base_delivery_fee: number
+          id: number
+          logo_url: string | null
+          maintenance_message: string
+          maintenance_mode: boolean
+          min_order_amount: number
+          service_fee_percentage: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app_name?: string
+          base_delivery_fee?: number
+          id?: number
+          logo_url?: string | null
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          min_order_amount?: number
+          service_fee_percentage?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app_name?: string
+          base_delivery_fee?: number
+          id?: number
+          logo_url?: string | null
+          maintenance_message?: string
+          maintenance_mode?: boolean
+          min_order_amount?: number
+          service_fee_percentage?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string
           id: string
+          notification_preferences: Json
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
+          notification_preferences?: Json
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
+          notification_preferences?: Json
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      riders: {
+        Row: {
+          created_at: string
+          id: string
+          is_online: boolean
+          owner_id: string
+          plate_number: string | null
+          status: Database["public"]["Enums"]["rider_status"]
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          owner_id: string
+          plate_number?: string | null
+          status?: Database["public"]["Enums"]["rider_status"]
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          owner_id?: string
+          plate_number?: string | null
+          status?: Database["public"]["Enums"]["rider_status"]
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riders_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_areas: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
         }
         Relationships: []
       }
@@ -251,11 +375,13 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_open: boolean
           latitude: number | null
           logo_url: string | null
           longitude: number | null
           name: string
           owner_id: string
+          service_area_id: string | null
           status: Database["public"]["Enums"]["vendor_status"]
         }
         Insert: {
@@ -263,11 +389,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_open?: boolean
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           name: string
           owner_id: string
+          service_area_id?: string | null
           status?: Database["public"]["Enums"]["vendor_status"]
         }
         Update: {
@@ -275,11 +403,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_open?: boolean
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
           name?: string
           owner_id?: string
+          service_area_id?: string | null
           status?: Database["public"]["Enums"]["vendor_status"]
         }
         Relationships: [
@@ -290,6 +420,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendors_service_area_id_fkey"
+            columns: ["service_area_id"]
+            isOneToOne: false
+            referencedRelation: "service_areas"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -297,18 +434,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_delivery: { Args: { target_order_id: string }; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
+      resubmit_rider_application: {
+        Args: { target_rider_id: string }
+        Returns: undefined
+      }
+      resubmit_vendor_application: {
+        Args: { target_vendor_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       order_status:
         | "pending"
         | "accepted"
         | "preparing"
+        | "ready_for_pickup"
         | "rider_assigned"
         | "picked_up"
         | "in_transit"
         | "delivered"
         | "cancelled"
+      rider_status: "pending" | "approved" | "rejected" | "suspended"
       user_role: "customer" | "vendor" | "rider" | "admin"
       vendor_status: "pending" | "approved" | "suspended" | "rejected"
     }
@@ -445,12 +593,14 @@ export const Constants = {
         "pending",
         "accepted",
         "preparing",
+        "ready_for_pickup",
         "rider_assigned",
         "picked_up",
         "in_transit",
         "delivered",
         "cancelled",
       ],
+      rider_status: ["pending", "approved", "rejected", "suspended"],
       user_role: ["customer", "vendor", "rider", "admin"],
       vendor_status: ["pending", "approved", "suspended", "rejected"],
     },

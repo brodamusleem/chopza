@@ -9,7 +9,7 @@ export function VendorCard({ vendor }: { vendor: Vendor }) {
       className="group overflow-hidden rounded-2xl border bg-card transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
     >
       <div className="flex h-36 items-center justify-center bg-secondary text-primary">
-        <UtensilsCrossed size={42} strokeWidth={1.25} aria-hidden="true" />
+        {vendor.logoUrl ? <img src={vendor.logoUrl} alt="" className="h-full w-full object-cover" /> : <UtensilsCrossed size={42} strokeWidth={1.25} aria-hidden="true" />}
       </div>
       <div className="space-y-3 p-5">
         <div className="flex items-center justify-between">
@@ -17,14 +17,9 @@ export function VendorCard({ vendor }: { vendor: Vendor }) {
           <ArrowUpRight size={18} aria-hidden="true" />
         </div>
         <p className="text-sm text-muted-foreground">
-          {vendor.cuisine} · {vendor.area}
+          {vendor.description || vendor.area}
         </p>
-        <div className="flex items-center justify-between">
-          <span className="text-sm">
-            {vendor.deliveryMinutes}–{vendor.deliveryMinutes + 10} min
-          </span>
-          <Badge variant="secondary">Demo menu</Badge>
-        </div>
+        <Badge variant="secondary">{vendor.area}</Badge>
       </div>
     </Link>
   )

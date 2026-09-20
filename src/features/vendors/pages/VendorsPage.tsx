@@ -8,7 +8,7 @@ export function Component() {
         </p>
         <h1 className="mt-2 text-3xl font-semibold">What are you craving?</h1>
         <p className="mt-3 text-muted-foreground">
-          Sample restaurants and menus to explore the ordering experience.
+          Browse approved restaurants across Kano and follow your delivery live.
         </p>
       </div>
       <VendorList />

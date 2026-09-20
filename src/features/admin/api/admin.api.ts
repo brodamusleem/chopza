@@ -19,7 +19,7 @@ export async function getPendingVendors(): Promise<AdminVendor[]> {
 
 async function setVendorStatus(
   vendorId: string,
-  status: 'approved' | 'rejected',
+  status: 'approved' | 'rejected' | 'suspended',
 ): Promise<void> {
   const { error } = await requireSupabase()
     .from('vendors')
@@ -36,6 +36,69 @@ export async function rejectVendor(vendorId: string): Promise<void> {
   return setVendorStatus(vendorId, 'rejected')
 }
 
+export async function suspendVendor(vendorId: string): Promise<void> {
+  return setVendorStatus(vendorId, 'suspended')
+}
+
+export type AdminVendorDetail = {
+  id: string
+  ownerId: string
+  name: string
+  description: string | null
+  address: string
+  serviceArea: string | null
+  logoUrl: string | null
+  latitude: number | null
+  longitude: number | null
+  status: AdminVendor['status']
+  createdAt: string
+  ownerName: string | null
+  ownerEmail: string | null
+  ownerPhone: string | null
+}
+
+export async function getVendorDetail(vendorId: string): Promise<AdminVendorDetail | null> {
+  const { data, error } = await requireSupabase()
+    .from('vendors')
+    .select('id, owner_id, name, description, address, service_area_id, logo_url, latitude, longitude, status, created_at, profiles(full_name, phone), service_areas(name)')
+    .eq('id', vendorId)
+    .maybeSingle() as unknown as {
+      data: {
+        id: string
+        owner_id: string
+        name: string
+        description: string | null
+        address: string
+        logo_url: string | null
+        latitude: number | null
+        longitude: number | null
+        status: AdminVendor['status']
+        created_at: string
+        profiles: { full_name: string | null; phone: string | null } | null
+        service_areas: { name: string } | null
+      } | null
+      error: { message: string } | null
+    }
+  throwOnError(error)
+  if (!data) return null
+  return {
+    id: data.id,
+    ownerId: data.owner_id,
+    name: data.name,
+    description: data.description,
+    address: data.address,
+    serviceArea: data.service_areas?.name ?? null,
+    logoUrl: data.logo_url,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    status: data.status,
+    createdAt: data.created_at,
+    ownerName: data.profiles?.full_name ?? null,
+    ownerEmail: null,
+    ownerPhone: data.profiles?.phone ?? null,
+  }
+}
+
 export async function getAllVendors(
   filters: VendorFilters = {},
 ): Promise<AdminVendor[]> {
@@ -47,7 +110,7 @@ export async function getAllVendors(
   if (filters.search?.trim()) query = query.ilike('name', `%${filters.search.trim()}%`)
   const { data, error } = await query
   throwOnError(error)
-  return data.map((vendor) => ({
+  return (data ?? []).map((vendor) => ({
     id: vendor.id,
     name: vendor.name,
     status: vendor.status,
@@ -70,7 +133,7 @@ export async function getRecentOrders(
   if (filters.to) query = query.lt('created_at', startOfLagosDay(nextDay(filters.to)))
   const { data, error } = await query
   throwOnError(error)
-  return data.map((order) => ({
+  return (data ?? []).map((order) => ({
     id: order.id,
     customer: order.customer?.full_name ?? 'Unknown customer',
     vendor: order.vendor?.name ?? 'Unknown vendor',
@@ -118,7 +181,7 @@ export async function getOrdersPerDay(): Promise<OrdersPerDay> {
     .lt('created_at', startOfLagosDay(nextDay(keys.at(-1)!)))
   throwOnError(error)
   const counts = new Map(keys.map((key) => [key, 0]))
-  data.forEach((order) => {
+  ;(data ?? []).forEach((order) => {
     const key = dayKey(new Date(order.created_at))
     if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1)
   })

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Loader2, Search } from 'lucide-react'
-import { toast } from 'sonner'
+import { Search } from 'lucide-react'
+import { Link } from 'react-router'
 import {
   Card,
   CardContent,
@@ -9,7 +9,6 @@ import {
   CardDescription,
 } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
-import { Button } from '@/shared/components/ui/button'
 import {
   Table,
   TableHeader,
@@ -18,7 +17,6 @@ import {
   TableHead,
   TableCell,
 } from '@/shared/components/ui/table'
-import { approveVendor, rejectVendor } from '../api/admin.api'
 import type { AdminVendor, QueryResult } from '../types'
 import { StatusBadge } from './StatusBadge'
 import { TableSkeleton } from './TableSkeleton'
@@ -28,42 +26,14 @@ export function VendorApprovalTable({
   isLoading,
   error,
   refetch,
-  onMutation,
-}: QueryResult<AdminVendor[]> & { onMutation: () => Promise<void> }) {
+}: QueryResult<AdminVendor[]>) {
   const [search, setSearch] = useState('')
-  const [pending, setPending] = useState<{
-    id: string
-    action: 'approve' | 'reject'
-  } | null>(null)
   const rows =
     data?.filter((vendor) =>
       vendor.name
         .toLocaleLowerCase()
         .includes(search.trim().toLocaleLowerCase()),
     ) ?? []
-  async function mutate(vendor: AdminVendor, action: 'approve' | 'reject') {
-    if (pending) return
-    setPending({ id: vendor.id, action })
-    try {
-      await (action === 'approve'
-        ? approveVendor(vendor.id)
-        : rejectVendor(vendor.id))
-      toast.success(
-        action === 'approve'
-          ? `${vendor.name} approved`
-          : `${vendor.name} rejected`,
-      )
-      await onMutation()
-    } catch (cause) {
-      toast.error(
-        cause instanceof Error
-          ? cause.message
-          : 'The vendor could not be updated.',
-      )
-    } finally {
-      setPending(null)
-    }
-  }
   return (
     <Card>
       <CardHeader>
@@ -95,7 +65,7 @@ export function VendorApprovalTable({
                 <TableHead>Restaurant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Submitted</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Review</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,40 +94,7 @@ export function VendorApprovalTable({
                         timeZone: 'Africa/Lagos',
                       })}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="default"
-                          disabled={Boolean(pending)}
-                          onClick={() => void mutate(vendor, 'approve')}
-                          aria-label={`Approve ${vendor.name}`}
-                        >
-                          {pending?.id === vendor.id &&
-                            pending.action === 'approve' && (
-                              <Loader2
-                                className="size-4 animate-spin"
-                                aria-hidden="true"
-                              />
-                            )}
-                          Approve
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          disabled={Boolean(pending)}
-                          onClick={() => void mutate(vendor, 'reject')}
-                          aria-label={`Reject ${vendor.name}`}
-                        >
-                          {pending?.id === vendor.id &&
-                            pending.action === 'reject' && (
-                              <Loader2
-                                className="size-4 animate-spin"
-                                aria-hidden="true"
-                              />
-                            )}
-                          Reject
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableCell><Link className="text-primary underline" to={`/admin/vendors/${vendor.id}`}>View application</Link></TableCell>
                   </TableRow>
                 ))
               )}

@@ -1,0 +1,5 @@
+import { useEffect, useState } from 'react'
+import { useAuth } from '@/features/auth'
+import { getRiderApplication, type RiderApplication } from '../api/rider.api'
+
+export function useRiderApplicationStatus() { const { user, role, ready } = useAuth(); const [application, setApplication] = useState<RiderApplication | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<Error | null>(null); const [refresh, setRefresh] = useState(0); useEffect(() => { if (!ready || role !== 'rider' || !user) { setLoading(!ready); return } let active = true; setLoading(true); getRiderApplication(user.id).then((value) => active && setApplication(value)).catch((cause: unknown) => active && setError(cause instanceof Error ? cause : new Error('Unable to load rider application.'))).finally(() => active && setLoading(false)); return () => { active = false } }, [ready, role, user, refresh]); return { application, status: application?.status ?? null, isLoading: loading, error, refetch: () => setRefresh((value) => value + 1) } }

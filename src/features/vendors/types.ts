@@ -1,9 +1,9 @@
 export type Vendor = {
   id: string
   name: string
-  cuisine: string
+  description: string | null
+  logoUrl: string | null
   area: string
-  deliveryMinutes: number
 }
 export type MenuItem = {
   id: string

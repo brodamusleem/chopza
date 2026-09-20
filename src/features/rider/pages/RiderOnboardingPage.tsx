@@ -1,0 +1,13 @@
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useAuth } from '@/features/auth'
+import { Button } from '@/shared/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { Input } from '@/shared/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { createRiderApplication, resubmitRiderApplication, updateRiderApplication, type RiderApplication } from '../api/rider.api'
+const schema = z.object({ vehicle_type: z.enum(['Bicycle', 'Motorcycle', 'Car', 'Tricycle/Keke']), plate_number: z.string().trim() }).refine((value) => value.vehicle_type === 'Bicycle' || value.plate_number.length > 0, { path: ['plate_number'], message: 'Enter a plate number.' })
+type Values = z.infer<typeof schema>
+export function Component({ application, done }: { application?: RiderApplication; done?: () => void }) { const { user } = useAuth(); const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { vehicle_type: application?.vehicle_type as Values['vehicle_type'] ?? 'Bicycle', plate_number: application?.plate_number ?? '' } }); return <Card className="max-w-xl"><CardHeader><CardTitle>{application ? 'Update rider application' : 'Become a rider'}</CardTitle></CardHeader><CardContent><Form {...form}><form className="space-y-5" onSubmit={form.handleSubmit(async (values) => { if (!user) return; if (application) { await updateRiderApplication(application.id, values); if (application.status === 'rejected') await resubmitRiderApplication(application.id) } else await createRiderApplication(user.id, values); done?.() })}><FormField control={form.control} name="vehicle_type" render={({ field }) => <FormItem><FormLabel>Vehicle type</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger className="w-full"><SelectValue /></SelectTrigger></FormControl><SelectContent>{['Bicycle', 'Motorcycle', 'Car', 'Tricycle/Keke'].map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={form.control} name="plate_number" render={({ field }) => <FormItem><FormLabel>Plate number</FormLabel><FormControl><Input {...field} placeholder="Optional for bicycles" /></FormControl><FormMessage /></FormItem>} /><Button type="submit">Submit application</Button></form></Form></CardContent></Card> }

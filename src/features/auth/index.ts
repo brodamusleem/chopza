@@ -1,4 +1,5 @@
 export { RoleGuard } from './components/RoleGuard'
+export { SignupForm } from './components/SignupForm'
 export { useAuth } from './hooks/useAuth'
 export { useSession } from './hooks/useSession'
 export { logout } from './api/auth.api'

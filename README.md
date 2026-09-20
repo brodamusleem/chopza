@@ -1,6 +1,6 @@
 ﻿# Chopza — Kano food ordering & live dispatch
 
-SWE4600 frontend scaffold. React 19, TypeScript 5 (strict), Vite 8, Tailwind CSS 4, shadcn/ui, React Router 7, Axios, React Hook Form + Zod, Zustand, Supabase JS 2, and Google Maps.
+SWE4600 frontend scaffold. React 19, TypeScript 5 (strict), Vite 8, Tailwind CSS 4, shadcn/ui, React Router 7, Axios, React Hook Form + Zod, Zustand, Supabase JS 2, and Leaflet/OpenStreetMap.
 
 ## Run locally
 
@@ -23,12 +23,10 @@ Open the URL printed by Vite. The app boots without keys: restaurants are clearl
 | VITE_SUPABASE_URL             | Project API URL from Supabase dashboard                                       |
 | VITE_SUPABASE_PUBLISHABLE_KEY | Browser publishable key beginning sb_publishable_                             |
 | VITE_API_BASE_URL             | Optional trusted non-Supabase HTTP API base URL                               |
-| VITE_GOOGLE_MAPS_API_KEY      | Google Maps JavaScript API browser key                                        |
-| VITE_GOOGLE_MAPS_MAP_ID       | Map ID for advanced markers; defaults to Google's DEMO_MAP_ID for development |
 
 Every VITE_ value is public in the browser bundle. Never add a Supabase secret or service-role key. Real env files are gitignored. Restart Vite after changing env.
 
-Google Maps was selected by the project owner. Enable Maps JavaScript API and billing in Google Cloud, restrict the key by HTTP referrers and API, and add localhost plus the eventual production domain. Location sharing requires HTTPS outside localhost and explicit browser permission.
+Leaflet uses OpenStreetMap tiles and requires no map API key. Location sharing requires HTTPS outside localhost and explicit browser permission.
 
 ## Commands
 
@@ -49,7 +47,7 @@ ESLint uses flat config. Prettier handles formatting. Vitest checks cart behavio
 - `src/features/auth`: session, forms, schemas, trusted role guard, auth store.
 - `src/features/vendors`: demo discovery, menus, vendor editor placeholder.
 - `src/features/ordering`: multi-vendor cart, checkout preview, schemas.
-- `src/features/dispatch-tracking`: order status subscription, location receiver, Google Map.
+- `src/features/dispatch-tracking`: order status subscription, location receiver, Leaflet/OpenStreetMap maps.
 - `src/features/rider`: queue placeholder and opt-in GPS Broadcast sender.
 - `src/features/admin`: administration placeholders.
 - `src/shared`: shadcn UI, generic hooks, typed clients, constants, database contract.
@@ -137,4 +135,5 @@ npm registry versions were checked during setup. The latest registry majors exce
 - [Supabase publishable keys](https://supabase.com/docs/guides/getting-started/api-keys)
 - [Supabase Broadcast](https://supabase.com/docs/guides/realtime/broadcast)
 - [Realtime authorization](https://supabase.com/docs/guides/realtime/authorization)
-- [Google Maps JavaScript loading](https://developers.google.com/maps/documentation/javascript/load-maps-js-api)
+- [Leaflet](https://leafletjs.com/)
+- [OpenStreetMap tile usage](https://operations.osmfoundation.org/policies/tiles/)

@@ -1,17 +1,12 @@
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router'
+import { Button } from '@/shared/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 export function RouteError() {
   const error = useRouteError()
+  const isNotFound = isRouteErrorResponse(error) && error.status === 404
   return (
-    <main className="mx-auto max-w-xl space-y-4 p-10">
-      <h1 className="text-2xl font-semibold">
-        {isRouteErrorResponse(error) && error.status === 404
-          ? 'Page not found'
-          : 'Something went wrong'}
-      </h1>
-      <p>Try reloading the page or return to the home page.</p>
-      <Link className="underline" to="/">
-        Back to Chopza
-      </Link>
+    <main className="mx-auto max-w-xl px-5 py-16">
+      <Card role="alert"><CardHeader><CardTitle>{isNotFound ? 'Page not found' : 'Something went wrong'}</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-muted-foreground">{isNotFound ? 'That Chopza page does not exist.' : 'The page could not be displayed.'}</p><div className="flex gap-3"><Button onClick={() => window.location.reload()}>Reload page</Button><Button variant="outline" asChild><Link to="/">Back to Chopza</Link></Button></div></CardContent></Card>
     </main>
   )
 }
