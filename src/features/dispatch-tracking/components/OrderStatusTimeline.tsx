@@ -3,14 +3,20 @@ const steps = [
   'pending',
   'accepted',
   'preparing',
+  'ready_for_pickup',
+  'rider_assigned',
   'picked_up',
+  'in_transit',
   'delivered',
 ] as const
 const labels = {
   pending: 'Order placed',
   accepted: 'Restaurant accepted',
   preparing: 'Preparing your food',
-  picked_up: 'On the way',
+  ready_for_pickup: 'Ready for pickup',
+  rider_assigned: 'Rider assigned',
+  picked_up: 'Picked up',
+  in_transit: 'On the way',
   delivered: 'Delivered',
 }
 export function OrderStatusTimeline({

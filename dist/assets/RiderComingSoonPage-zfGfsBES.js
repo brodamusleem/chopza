@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-Cx0BB4qO.js";var t=e();function n(){return(0,t.jsx)(`div`,{children:(0,t.jsx)(`h1`,{className:`text-3xl font-semibold`,children:`Coming soon`})})}export{n as Component};

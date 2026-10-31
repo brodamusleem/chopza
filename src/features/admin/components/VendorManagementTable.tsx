@@ -120,7 +120,14 @@ export function VendorManagementTable({
                         timeZone: 'Africa/Lagos',
                       })}
                     </TableCell>
-                    <TableCell><Link className="text-primary underline" to={`/admin/vendors/${vendor.id}`}>View</Link></TableCell>
+                    <TableCell>
+                      <Link
+                        className="text-primary underline"
+                        to={`/admin/vendors/${vendor.id}`}
+                      >
+                        View
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

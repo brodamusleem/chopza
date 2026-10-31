@@ -59,7 +59,7 @@ export function LoginForm() {
               ? '/vendor/dashboard'
               : profileRole === 'rider'
                 ? '/rider/dashboard'
-            : '/',
+                : '/',
         { replace: true },
       )
     } catch (error) {

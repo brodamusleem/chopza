@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 type ThemeProviderState = {
@@ -6,11 +12,20 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void
 }
 
-const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined)
+const ThemeProviderContext = createContext<ThemeProviderState | undefined>(
+  undefined,
+)
 
-export function ThemeProvider({ children, defaultTheme = 'system' }: { children: ReactNode; defaultTheme?: Theme }) {
-  const [theme, setTheme] = useState<Theme>(() =>
-    (localStorage.getItem('chopza-theme') as Theme | null) ?? defaultTheme,
+export function ThemeProvider({
+  children,
+  defaultTheme = 'system',
+}: {
+  children: ReactNode
+  defaultTheme?: Theme
+}) {
+  const [theme, setTheme] = useState<Theme>(
+    () =>
+      (localStorage.getItem('chopza-theme') as Theme | null) ?? defaultTheme,
   )
 
   useEffect(() => {

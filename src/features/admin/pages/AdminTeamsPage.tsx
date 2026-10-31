@@ -3,16 +3,57 @@ import { MoreHorizontal, Plus, Search, Users } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const members = [
-  { name: 'Chopza Admin', email: 'admin@chopza.com', role: 'Admin', status: 'Active', lastActive: 'Now' },
-  { name: 'Amina Yusuf', email: 'amina@chopza.com', role: 'Operations Manager', status: 'Active', lastActive: '8 min ago' },
-  { name: 'Ibrahim Musa', email: 'ibrahim@chopza.com', role: 'Dispatcher', status: 'Active', lastActive: '24 min ago' },
-  { name: 'Fatima Bello', email: 'fatima@chopza.com', role: 'Support Agent', status: 'Invited', lastActive: 'Pending invite' },
-  { name: 'Yusuf Abdullahi', email: 'yusuf@chopza.com', role: 'Finance', status: 'Suspended', lastActive: '3 days ago' },
+  {
+    name: 'Chopza Admin',
+    email: 'admin@chopza.com',
+    role: 'Admin',
+    status: 'Active',
+    lastActive: 'Now',
+  },
+  {
+    name: 'Amina Yusuf',
+    email: 'amina@chopza.com',
+    role: 'Operations Manager',
+    status: 'Active',
+    lastActive: '8 min ago',
+  },
+  {
+    name: 'Ibrahim Musa',
+    email: 'ibrahim@chopza.com',
+    role: 'Dispatcher',
+    status: 'Active',
+    lastActive: '24 min ago',
+  },
+  {
+    name: 'Fatima Bello',
+    email: 'fatima@chopza.com',
+    role: 'Support Agent',
+    status: 'Invited',
+    lastActive: 'Pending invite',
+  },
+  {
+    name: 'Yusuf Abdullahi',
+    email: 'yusuf@chopza.com',
+    role: 'Finance',
+    status: 'Suspended',
+    lastActive: '3 days ago',
+  },
 ]
 
 export function AdminTeamsPage() {
@@ -24,7 +65,9 @@ export function AdminTeamsPage() {
       members.filter(
         (member) =>
           (role === 'all' || member.role === role) &&
-          `${member.name} ${member.email}`.toLowerCase().includes(query.toLowerCase()),
+          `${member.name} ${member.email}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
       ),
     [query, role],
   )
@@ -35,7 +78,9 @@ export function AdminTeamsPage() {
         <div>
           <p className="text-sm font-medium text-primary">Management</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight">Teams</h2>
-          <p className="mt-2 text-muted-foreground">Manage the people keeping Chopza operations moving.</p>
+          <p className="mt-2 text-muted-foreground">
+            Manage the people keeping Chopza operations moving.
+          </p>
         </div>
         <Button>
           <Plus className="size-4" /> Add team member
@@ -68,7 +113,13 @@ export function AdminTeamsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All roles</SelectItem>
-                {['Admin', 'Operations Manager', 'Dispatcher', 'Support Agent', 'Finance'].map((item) => (
+                {[
+                  'Admin',
+                  'Operations Manager',
+                  'Dispatcher',
+                  'Support Agent',
+                  'Finance',
+                ].map((item) => (
                   <SelectItem key={item} value={item}>
                     {item}
                   </SelectItem>
@@ -103,7 +154,9 @@ export function AdminTeamsPage() {
                         </Avatar>
                         <div>
                           <p className="font-medium">{member.name}</p>
-                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {member.email}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -123,7 +176,9 @@ export function AdminTeamsPage() {
                         {member.status}
                       </span>
                     </td>
-                    <td className="py-4 text-muted-foreground">{member.lastActive}</td>
+                    <td className="py-4 text-muted-foreground">
+                      {member.lastActive}
+                    </td>
                     <td className="py-4 text-right">
                       <Button variant="ghost" size="sm">
                         <MoreHorizontal className="size-4" />
@@ -139,4 +194,3 @@ export function AdminTeamsPage() {
     </section>
   )
 }
-

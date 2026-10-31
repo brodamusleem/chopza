@@ -5,5 +5,7 @@ export const checkoutSchema = z.object({
     .string()
     .regex(/^(?:\+234|0)[789]\d{9}$/, 'Enter a Nigerian mobile number.'),
   notes: z.string().max(500).optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
 })
 export type CheckoutValues = z.infer<typeof checkoutSchema>

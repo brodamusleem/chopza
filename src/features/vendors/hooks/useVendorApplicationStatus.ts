@@ -23,7 +23,11 @@ export function useVendorApplicationStatus() {
     const timeout = window.setTimeout(() => {
       if (active) {
         setIsLoading(false)
-        setError(new Error('Vendor application lookup timed out. Check your Supabase connection and try again.'))
+        setError(
+          new Error(
+            'Vendor application lookup timed out. Check your Supabase connection and try again.',
+          ),
+        )
       }
     }, 10000)
     setApplication(null)
@@ -34,7 +38,12 @@ export function useVendorApplicationStatus() {
         if (active) setApplication(data)
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause : new Error('Unable to load your vendor application.'))
+        if (active)
+          setError(
+            cause instanceof Error
+              ? cause
+              : new Error('Unable to load your vendor application.'),
+          )
       })
       .finally(() => {
         window.clearTimeout(timeout)
@@ -46,5 +55,11 @@ export function useVendorApplicationStatus() {
     }
   }, [ready, role, user, refreshToken])
 
-  return { application, status: application?.status ?? null, isLoading, error, refetch: () => setRefreshToken((value) => value + 1) }
+  return {
+    application,
+    status: application?.status ?? null,
+    isLoading,
+    error,
+    refetch: () => setRefreshToken((value) => value + 1),
+  }
 }

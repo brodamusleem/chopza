@@ -13,6 +13,7 @@ export function useGeolocation(enabled = false) {
     return () => navigator.geolocation.clearWatch(watch)
   }, [enabled])
   return {
+     
     position: enabled ? position : null,
     error:
       enabled && !navigator.geolocation

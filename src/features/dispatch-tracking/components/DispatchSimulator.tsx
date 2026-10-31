@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Pause, Play } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 
@@ -32,8 +37,14 @@ export function DispatchSimulator({
         const deltaLat = (Math.random() - 0.5) * 0.0012
         const deltaLng = (Math.random() - 0.5) * 0.0016
         const next = {
-          lat: Number(Math.min(12.03, Math.max(11.98, previous.lat + deltaLat)).toFixed(6)),
-          lng: Number(Math.min(8.7, Math.max(8.52, previous.lng + deltaLng)).toFixed(6)),
+          lat: Number(
+            Math.min(12.03, Math.max(11.98, previous.lat + deltaLat)).toFixed(
+              6,
+            ),
+          ),
+          lng: Number(
+            Math.min(8.7, Math.max(8.52, previous.lng + deltaLng)).toFixed(6),
+          ),
         }
         onTick(next)
         return next

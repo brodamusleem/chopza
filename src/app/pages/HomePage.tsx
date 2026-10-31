@@ -2,157 +2,274 @@ import { Link } from 'react-router'
 import {
   ArrowRight,
   Bike,
-  Check,
-  Clock3,
   MapPin,
+  Sparkles,
   Store,
-  Truck,
+  Timer,
   UtensilsCrossed,
 } from 'lucide-react'
+import { AnimatedGreeting } from '@/app/components/AnimatedGreeting'
+import { PublicFaq } from '@/app/components/PublicFaq'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card'
+
+const foodImages = [
+  'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=85',
+  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=85',
+  'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85',
+]
 
 const roles = [
   {
     icon: UtensilsCrossed,
-    title: 'Foodies',
-    text: 'Browse restaurants across Kano and order in a few taps.',
-    action: 'Sign up to order',
-    href: '/register',
+    title: 'Hungry?',
+    text: 'Find a meal worth getting excited about.',
+    action: 'Start ordering',
+    href: '/explore',
   },
   {
     icon: Store,
-    title: 'Vendors',
-    text: 'List your restaurant and reach more customers across the city.',
-    action: 'Register your restaurant',
-    href: '/register/vendor',
+    title: 'Own a kitchen?',
+    text: 'Put your menu in front of new customers.',
+    action: 'For vendors',
+    href: '/vendors',
   },
   {
     icon: Bike,
-    title: 'Riders',
-    text: 'Earn by delivering orders on your own schedule.',
-    action: 'Become a rider',
-    href: '/register/rider',
+    title: 'Ready to ride?',
+    text: 'Deliver on a schedule that fits your day.',
+    action: 'For riders',
+    href: '/riders',
+  },
+]
+
+const steps = [
+  {
+    icon: UtensilsCrossed,
+    number: '01',
+    title: 'Pick your craving',
+    text: 'Find local restaurants and meals you feel like having.',
+  },
+  {
+    icon: Timer,
+    number: '02',
+    title: 'Place your order',
+    text: 'Send your order to the kitchen in a few taps.',
+  },
+  {
+    icon: Bike,
+    number: '03',
+    title: 'Watch it come home',
+    text: 'Follow your rider live, right up to your door.',
   },
 ]
 
 export function Component() {
   return (
-    <div className="space-y-20 pb-8">
-      <section className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-primary-foreground sm:px-12 sm:py-20 lg:px-16">
-        <div className="pointer-events-none absolute -right-16 -bottom-24 size-72 rounded-full border-[36px] border-amber-300/25" />
-        <div className="relative max-w-3xl">
-          <Badge className="mb-6 border-amber-200/30 bg-amber-300 text-green-950">
-            <MapPin aria-hidden="true" /> Built for Kano
-          </Badge>
-          <h1 className="max-w-2xl text-4xl leading-[1.05] font-bold tracking-tight sm:text-6xl">
-            Food to your doorstep, tracked live.
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-primary-foreground/80 sm:text-lg">
-            Order from restaurants across Kano in one app, then follow your
-            delivery in real time from kitchen to door.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="bg-amber-300 text-green-950 hover:bg-amber-200">
-              <Link to="/register">
-                Order food <ArrowRight aria-hidden="true" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-              <Link to="/register/vendor">Register as a vendor</Link>
-            </Button>
-            <Button asChild variant="link" className="text-primary-foreground/80 hover:text-primary-foreground">
-              <Link to="/register/rider">Register as a rider</Link>
-            </Button>
+    <div className="space-y-24 pb-10 sm:space-y-32">
+      <section className="hero-shine relative isolate overflow-hidden rounded-[2rem] bg-[#32140c] px-6 py-10 text-[#fff8f3] sm:px-10 sm:py-16 lg:px-14 lg:py-20">
+        <div className="absolute -top-24 -left-16 size-72 rounded-full bg-[#ff8d4d]/30 blur-3xl" />
+        <div className="absolute right-0 bottom-0 size-80 rounded-full bg-[#f6b33f]/15 blur-3xl" />
+        <div className="relative grid gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="max-w-2xl">
+            <Badge className="mb-7 border-0 bg-[#ffdd70] px-3 text-[#4a2108]">
+              <MapPin aria-hidden="true" /> Kano’s local food delivery spot
+            </Badge>
+            <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#ffc8aa] uppercase">
+              Your next good meal is nearby
+            </p>
+            <h1 className="text-5xl leading-[0.94] font-black tracking-[-0.06em] sm:text-7xl">
+              <AnimatedGreeting />
+            </h1>
+            <p className="mt-7 max-w-xl text-lg leading-8 text-[#f7d9ca]">
+              From familiar favourites to something new, Chopza brings Kano’s
+              kitchens closer—with live tracking from the first stir to your
+              doorstep.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[#ffdd70] px-6 text-[#3b180d] hover:bg-[#ffe89d]"
+              >
+                <Link to="/explore">
+                  Order food <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full border-[#fff8f3]/25 bg-transparent text-[#fff8f3] hover:bg-white/10 hover:text-white"
+              >
+                <Link to="/vendors">List your restaurant</Link>
+              </Button>
+            </div>
+          </div>
+          <div className="relative mx-auto h-[350px] w-full max-w-md sm:h-[430px]">
+            <div className="float-gentle absolute top-0 left-2 h-[72%] w-[64%] overflow-hidden rounded-[2rem] border-4 border-[#fff8f3]/90 shadow-2xl">
+              <img
+                src={foodImages[0]}
+                alt="Fresh pizza ready to enjoy"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="float-slow absolute right-0 bottom-2 h-[56%] w-[54%] overflow-hidden rounded-[2rem] border-4 border-[#fff8f3]/90 shadow-2xl">
+              <img
+                src={foodImages[1]}
+                alt="Colourful prepared meal"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="absolute top-[52%] left-[7%] rounded-2xl bg-[#fff8f3] px-4 py-3 text-[#3b180d] shadow-xl">
+              <p className="text-xs font-bold text-primary">TRACKED LIVE</p>
+              <p className="mt-1 flex items-center gap-1 text-sm font-bold">
+                <span className="size-2 animate-pulse rounded-full bg-[#e75c28]" />{' '}
+                On its way to you
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="roles-heading">
-        <div className="mb-7 max-w-xl">
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Find your place at Chopza</p>
-          <h2 id="roles-heading" className="mt-2 text-3xl font-semibold tracking-tight">One platform, three ways in.</h2>
+      <section
+        className="grid gap-5 md:grid-cols-3"
+        aria-label="Chopza audiences"
+      >
+        {roles.map(({ icon: Icon, title, text, action, href }) => (
+          <Link
+            key={title}
+            to={href}
+            className="group rounded-[1.5rem] border bg-card p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10"
+          >
+            <Icon className="mb-8 size-8 text-primary" aria-hidden="true" />
+            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+            <p className="mt-2 leading-6 text-muted-foreground">{text}</p>
+            <span className="mt-7 inline-flex items-center gap-2 font-bold text-primary">
+              {action}{' '}
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+        ))}
+      </section>
+
+      <section className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+        <div>
+          <p className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
+            Made to feel local
+          </p>
+          <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">
+            Food discovery, without the guesswork.
+          </h2>
+          <p className="mt-5 max-w-md leading-7 text-muted-foreground">
+            Explore what is cooking around Kano, order with confidence, and know
+            where your food is every step of the way.
+          </p>
+          <Button asChild variant="link" className="mt-5 px-0 text-primary">
+            <Link to="/company">
+              Why Chopza exists <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {roles.map(({ icon: Icon, title, text, action, href }) => (
-            <Card key={title} className="h-full">
-              <CardHeader>
-                <Icon className="mb-3 size-7 text-primary" aria-hidden="true" />
-                <CardTitle className="text-xl">{title}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex h-full flex-col">
-                <p className="min-h-14 leading-6 text-muted-foreground">{text}</p>
-                <Button asChild variant="outline" className="mt-6 w-full">
-                  <Link to={href}>{action} <ArrowRight aria-hidden="true" /></Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+          <img
+            src={foodImages[2]}
+            alt="Warm bowl of food"
+            className="float-slow mt-8 h-64 w-full rounded-[2rem] object-cover shadow-lg sm:h-80"
+          />
+          <div className="rounded-[2rem] bg-secondary p-6 sm:p-8">
+            <Sparkles className="size-8 text-primary" aria-hidden="true" />
+            <p className="mt-12 text-xl font-bold leading-tight">
+              Made for the places and flavours Kano calls home.
+            </p>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
+              One simple platform for customers, restaurants, and riders.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section aria-labelledby="how-heading" className="border-y py-12">
-        <div className="mb-8 max-w-xl">
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary">How it works</p>
-          <h2 id="how-heading" className="mt-2 text-3xl font-semibold tracking-tight">From craving to doorstep.</h2>
+      <section className="rounded-[2rem] bg-foreground px-6 py-12 text-background sm:px-10 sm:py-16">
+        <div className="max-w-xl">
+          <p className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
+            Simple from start to finish
+          </p>
+          <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]">
+            A better way to get dinner sorted.
+          </h2>
         </div>
-        <div className="grid gap-8 md:grid-cols-3">
-          {[
-            { number: '01', icon: UtensilsCrossed, title: 'Browse & order', text: 'Choose a meal from your favourite local kitchen.' },
-            { number: '02', icon: UtensilsCrossed, title: 'Your food is prepared', text: 'The restaurant gets cooking while you stay updated.' },
-            { number: '03', icon: Truck, title: 'Track to your door', text: 'Follow your rider live until your order arrives.' },
-          ].map(({ number, icon: Icon, title, text }) => (
-            <div key={number} className="relative flex gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-primary">{number}</div>
-              <div>
-                <Icon className="mb-3 size-5 text-primary" aria-hidden="true" />
-                <h3 className="font-semibold">{title}</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
+        <div className="mt-12 grid gap-8 md:grid-cols-3">
+          {steps.map(({ icon: Icon, number, title, text }) => (
+            <div key={number} className="border-t border-background/20 pt-5">
+              <div className="flex items-center justify-between">
+                <Icon className="size-6 text-primary" />
+                <span className="font-mono text-sm text-background/45">
+                  {number}
+                </span>
               </div>
+              <h3 className="mt-8 text-xl font-bold">{title}</h3>
+              <p className="mt-2 leading-6 text-background/65">{text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section aria-labelledby="why-heading">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-primary">Why Chopza</p>
-            <h2 id="why-heading" className="mt-2 text-3xl font-semibold tracking-tight">Local food, with fewer question marks.</h2>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            {[
-              { icon: Store, title: 'One app, many kitchens' },
-              { icon: Clock3, title: 'Live rider tracking' },
-              { icon: MapPin, title: 'Made for Kano' },
-            ].map(({ icon: Icon, title }) => (
-              <div key={title} className="border-l-2 border-primary/30 pl-4">
-                <Icon className="mb-4 size-6 text-primary" aria-hidden="true" />
-                <p className="font-medium leading-6">{title}</p>
-                <Check className="mt-5 size-4 text-primary" aria-hidden="true" />
-              </div>
-            ))}
-          </div>
+      <section className="grid gap-8 lg:grid-cols-2">
+        <div className="rounded-[2rem] bg-[#ffcf84] p-8 sm:p-10">
+          <p className="text-xs font-bold tracking-[0.2em] text-[#61300d] uppercase">
+            For food lovers
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-[#3b180d]">
+            Your new favourite meal might be one tap away.
+          </h2>
+          <Button
+            asChild
+            className="mt-8 rounded-full bg-[#3b180d] text-white hover:bg-[#552010]"
+          >
+            <Link to="/explore">
+              Explore Chopza <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        </div>
+        <div className="rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
+          <p className="text-xs font-bold tracking-[0.2em] text-primary-foreground/70 uppercase">
+            For local businesses
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em]">
+            Turn every hungry scroll into a possible order.
+          </h2>
+          <Button
+            asChild
+            variant="outline"
+            className="mt-8 rounded-full border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+          >
+            <Link to="/vendors">
+              Meet your vendor tools <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
       </section>
 
-      <footer className="flex flex-col gap-5 border-t pt-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-semibold text-foreground">chopza<span className="text-amber-500">.</span></p>
-          <p className="mt-1">Good food. Right here in Kano.</p>
-        </div>
-        <nav aria-label="Footer navigation" className="flex gap-5">
-          <a href="#about" className="hover:text-foreground">About</a>
-          <a href="#contact" className="hover:text-foreground">Contact</a>
-          <a href="#terms" className="hover:text-foreground">Terms</a>
-        </nav>
-      </footer>
+      <PublicFaq
+        title="Ordering should feel easy."
+        items={[
+          {
+            question: 'Where is Chopza available?',
+            answer:
+              'Chopza is built around Kano and is currently growing its local restaurant network there.',
+          },
+          {
+            question: 'Can I track my order?',
+            answer:
+              'Yes. Once an order is out for delivery, the tracking flow is designed to show its live delivery progress.',
+          },
+          {
+            question: 'How can my restaurant join?',
+            answer:
+              'Visit the Vendors page to see the available tools, then use the application form to start onboarding.',
+          },
+        ]}
+      />
     </div>
   )
 }

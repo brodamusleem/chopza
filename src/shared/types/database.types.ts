@@ -10,35 +10,43 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
+      favorites: {
+        Row: {
+          created_at: string
+          customer_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           category: string | null
@@ -162,12 +170,16 @@ export type Database = {
           current_lng: number | null
           customer_id: string
           delivery_address: string
+          delivery_fee: number
           delivery_latitude: number | null
           delivery_longitude: number | null
           id: string
           location_updated_at: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           rider_id: string | null
+          service_fee: number
           status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
           total_amount: number
           updated_at: string
           vendor_id: string
@@ -179,12 +191,16 @@ export type Database = {
           current_lng?: number | null
           customer_id: string
           delivery_address: string
+          delivery_fee?: number
           delivery_latitude?: number | null
           delivery_longitude?: number | null
           id?: string
           location_updated_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           rider_id?: string | null
+          service_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
           total_amount: number
           updated_at?: string
           vendor_id: string
@@ -196,12 +212,16 @@ export type Database = {
           current_lng?: number | null
           customer_id?: string
           delivery_address?: string
+          delivery_fee?: number
           delivery_latitude?: number | null
           delivery_longitude?: number | null
           id?: string
           location_updated_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           rider_id?: string | null
+          service_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
           total_amount?: number
           updated_at?: string
           vendor_id?: string
@@ -226,6 +246,53 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          cart_group_id: string
+          created_at: string
+          currency: string
+          customer_id: string
+          id: string
+          paid_at: string | null
+          provider: string
+          reference: string
+          status: Database["public"]["Enums"]["payment_status"]
+        }
+        Insert: {
+          amount: number
+          cart_group_id: string
+          created_at?: string
+          currency?: string
+          customer_id: string
+          id?: string
+          paid_at?: string | null
+          provider?: string
+          reference: string
+          status?: Database["public"]["Enums"]["payment_status"]
+        }
+        Update: {
+          amount?: number
+          cart_group_id?: string
+          created_at?: string
+          currency?: string
+          customer_id?: string
+          id?: string
+          paid_at?: string | null
+          provider?: string
+          reference?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -372,7 +439,9 @@ export type Database = {
       vendors: {
         Row: {
           address: string
+          cover_url: string | null
           created_at: string
+          cuisine: string | null
           description: string | null
           id: string
           is_open: boolean
@@ -386,7 +455,9 @@ export type Database = {
         }
         Insert: {
           address: string
+          cover_url?: string | null
           created_at?: string
+          cuisine?: string | null
           description?: string | null
           id?: string
           is_open?: boolean
@@ -400,7 +471,9 @@ export type Database = {
         }
         Update: {
           address?: string
+          cover_url?: string | null
           created_at?: string
+          cuisine?: string | null
           description?: string | null
           id?: string
           is_open?: boolean
@@ -435,6 +508,18 @@ export type Database = {
     }
     Functions: {
       claim_delivery: { Args: { target_order_id: string }; Returns: undefined }
+      create_checkout: {
+        Args: {
+          p_delivery_address: string
+          p_delivery_lat: number
+          p_delivery_lng: number
+          p_items: Json
+        }
+        Returns: {
+          out_cart_group_id: string
+          out_total: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       resubmit_rider_application: {
         Args: { target_rider_id: string }
@@ -456,6 +541,12 @@ export type Database = {
         | "in_transit"
         | "delivered"
         | "cancelled"
+      payment_status:
+        | "unpaid"
+        | "paid"
+        | "failed"
+        | "refund_pending"
+        | "refunded"
       rider_status: "pending" | "approved" | "rejected" | "suspended"
       user_role: "customer" | "vendor" | "rider" | "admin"
       vendor_status: "pending" | "approved" | "suspended" | "rejected"
@@ -584,9 +675,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       order_status: [
@@ -599,6 +687,13 @@ export const Constants = {
         "in_transit",
         "delivered",
         "cancelled",
+      ],
+      payment_status: [
+        "unpaid",
+        "paid",
+        "failed",
+        "refund_pending",
+        "refunded",
       ],
       rider_status: ["pending", "approved", "rejected", "suspended"],
       user_role: ["customer", "vendor", "rider", "admin"],

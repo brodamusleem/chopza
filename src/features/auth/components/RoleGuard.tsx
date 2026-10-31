@@ -14,7 +14,13 @@ export function RoleGuard({
   if (!ready) return <p role="status">Loading your session…</p>
   if (error) return <p role="alert">{error}</p>
   if (!session)
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+      />
+    )
   if (roles && (!role || !roles.includes(role)))
     return (
       <p role="alert">

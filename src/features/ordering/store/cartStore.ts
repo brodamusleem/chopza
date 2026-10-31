@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import type { CartItem, VendorCart } from '../types'
 type CartState = {
   items: CartItem[]
@@ -7,7 +8,7 @@ type CartState = {
   removeItem: (vendorId: string, menuItemId: string) => void
   clear: () => void
 }
-export const useCartStore = create<CartState>((set) => ({
+export const useCartStore = create<CartState>()(persist((set) => ({
   items: [],
   addItem: (item) => {
     if (!Number.isSafeInteger(item.unitPriceKobo) || item.unitPriceKobo < 0)
@@ -49,6 +50,9 @@ export const useCartStore = create<CartState>((set) => ({
       ),
     })),
   clear: () => set({ items: [] }),
+}), {
+  name: 'chopza-cart',
+  storage: createJSONStorage(() => localStorage),
 }))
 export function groupCartByVendor(items: CartItem[]): VendorCart[] {
   const groups = new Map<string, VendorCart>()

@@ -94,7 +94,14 @@ export function VendorApprovalTable({
                         timeZone: 'Africa/Lagos',
                       })}
                     </TableCell>
-                    <TableCell><Link className="text-primary underline" to={`/admin/vendors/${vendor.id}`}>View application</Link></TableCell>
+                    <TableCell>
+                      <Link
+                        className="text-primary underline"
+                        to={`/admin/vendors/${vendor.id}`}
+                      >
+                        View application
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

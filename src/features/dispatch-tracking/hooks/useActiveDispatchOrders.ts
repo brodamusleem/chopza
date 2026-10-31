@@ -83,14 +83,29 @@ export function useActiveDispatchOrders() {
         async () => {
           await readOrders()
         },
-      )
-      .subscribe((status) => {
+      })
+
+    void client.realtime
+      .setAuth()
+      .then(() => {
         if (!active) return
-        if (status !== 'SUBSCRIBED') {
+        channel.subscribe((status) => {
+          if (!active) return
+          if (status !== 'SUBSCRIBED') {
+            setState((previous) => ({
+              ...previous,
+              isLoading: false,
+              error: 'Dispatch feed disconnected.',
+            }))
+          }
+        })
+      })
+      .catch(() => {
+        if (active) {
           setState((previous) => ({
             ...previous,
             isLoading: false,
-            error: 'Dispatch feed disconnected.',
+            error: 'Dispatch feed authorization failed.',
           }))
         }
       })

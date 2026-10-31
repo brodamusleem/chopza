@@ -17,7 +17,9 @@ export function useAdminQuery<T>(query: () => Promise<T>) {
         setResult((previous) => ({
           ...previous,
           isLoading: false,
-          error: new Error('This request timed out. Check your Supabase connection and try again.'),
+          error: new Error(
+            'This request timed out. Check your Supabase connection and try again.',
+          ),
         }))
       }
     }, 10000)

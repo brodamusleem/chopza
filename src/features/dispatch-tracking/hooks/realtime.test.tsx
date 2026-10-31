@@ -39,6 +39,7 @@ vi.mock('@/shared/lib/supabaseClient', () => ({
   supabase: { ...mock, realtime: { setAuth: mock.setAuth } },
 }))
 import { useLiveRiderLocation } from './useLiveRiderLocation'
+import { useLiveOrderPosition } from './useLiveOrderPosition'
 import { useOrderStatusChannel } from './useOrderStatusChannel'
 const riderId = '11111111-1111-4111-8111-111111111111'
 beforeEach(() => {
@@ -46,6 +47,38 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 describe('Realtime channel lifecycle', () => {
+  it('receives the assigned rider position from the private order channel', async () => {
+    const orderId = '33333333-3333-4333-8333-333333333333'
+    const { result, unmount } = renderHook(() =>
+      useLiveOrderPosition(orderId, riderId),
+    )
+    await waitFor(() => expect(mock.channels[0]?.callback).toBeDefined())
+    const channel = mock.channels[0]
+    expect(channel.topic).toBe(`order-tracking-${orderId}`)
+    expect(channel.on).toHaveBeenCalledWith(
+      'broadcast',
+      { event: 'position' },
+      expect.any(Function),
+    )
+    const payload = {
+      riderId,
+      lat: 12,
+      lng: 8,
+      accuracy: 4,
+      timestamp: Date.now(),
+    }
+    act(() => channel.callback?.({ payload }))
+    expect(result.current.location).toEqual(payload)
+    act(() =>
+      channel.callback?.({
+        payload: { ...payload, lat: 13, timestamp: payload.timestamp - 1 },
+      }),
+    )
+    expect(result.current.location).toEqual(payload)
+    unmount()
+    expect(mock.removeChannel).toHaveBeenCalledWith(channel)
+  })
+
   it('validates and orders GPS ticks and removes channels when rider changes', async () => {
     const { result, rerender, unmount } = renderHook(
       ({ id }) => useLiveRiderLocation(id),
@@ -91,20 +124,37 @@ describe('Realtime channel lifecycle', () => {
       rider_id: null,
       status: 'preparing',
       updated_at: '2026-09-13T12:00:00Z',
+      current_lat: null,
+      current_lng: null,
+      location_updated_at: null,
     }
     act(() => channel.callback?.({ new: order }))
     act(() =>
       channel.callback?.({
         new: {
           ...order,
-          status: 'pending',
-          updated_at: '2026-09-13T11:00:00Z',
+          status: 'in_transit',
+          updated_at: '2026-09-13T12:01:00Z',
+          current_lat: 12.01,
+          current_lng: 8.61,
+          location_updated_at: '2026-09-13T12:01:00Z',
         },
       }),
     )
-    expect(result.current.order?.status).toBe('preparing')
+    expect(result.current.order?.status).toBe('in_transit')
+    expect(result.current.order?.current_lat).toBe(12.01)
+    act(() =>
+      channel.callback?.({
+        new: {
+          ...order,
+          status: 'preparing',
+          updated_at: '2026-09-13T12:00:30Z',
+          current_lat: 11,
+        },
+      }),
+    )
+    expect(result.current.order?.current_lat).toBe(12.01)
     unmount()
     expect(mock.removeChannel).toHaveBeenCalledWith(channel)
   })
-
 })

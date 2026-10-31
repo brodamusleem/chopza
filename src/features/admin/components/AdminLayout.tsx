@@ -10,7 +10,9 @@ export function AdminLayout() {
         <AdminSidebar />
         <div className="min-w-0 flex-1">
           <AdminTopBar />
-          <div className="w-full px-5 py-8"><Outlet /></div>
+          <div className="w-full px-5 py-8">
+            <Outlet />
+          </div>
         </div>
       </div>
     </SidebarProvider>

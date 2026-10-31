@@ -9,7 +9,11 @@ export function Component() {
       <p className="mb-7 text-muted-foreground">
         Sign in to your Chopza account.
       </p>
-      {state?.message && <p role="status" className="mb-5 text-sm text-primary">{state.message}</p>}
+      {state?.message && (
+        <p role="status" className="mb-5 text-sm text-primary">
+          {state.message}
+        </p>
+      )}
       <LoginForm />
     </section>
   )

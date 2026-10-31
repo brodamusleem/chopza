@@ -12,7 +12,7 @@ create type rider_status as enum ('pending', 'approved', 'rejected', 'suspended'
 
 create table riders (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references profiles(id) on delete cascade,
+  owner_id uuid not null unique references profiles(id) on delete cascade,
   vehicle_type text not null,
   plate_number text,
   status rider_status not null default 'pending',
@@ -34,6 +34,8 @@ create policy "Authenticated rider-role users can create their own rider profile
   on riders for insert
   with check (
     auth.uid() = owner_id
+    and status = 'pending'
+    and is_online = false
     and exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'rider')
   );
 
@@ -54,6 +56,8 @@ create trigger enforce_rider_status_change
 create or replace function resubmit_rider_application(target_rider_id uuid)
 returns void as $$
 begin
+  perform set_config('app.resubmitting_vendor', 'true', true);
+
   update riders
   set status = 'pending'
   where id = target_rider_id

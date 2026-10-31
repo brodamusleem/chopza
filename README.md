@@ -1,6 +1,6 @@
 ﻿# Chopza — Kano food ordering & live dispatch
 
-SWE4600 frontend scaffold. React 19, TypeScript 5 (strict), Vite 8, Tailwind CSS 4, shadcn/ui, React Router 7, Axios, React Hook Form + Zod, Zustand, Supabase JS 2, and Leaflet/OpenStreetMap.
+Chopza is a multi-vendor food ordering and live dispatch app built with React 19, TypeScript 5, Vite 8, Tailwind CSS 4, React Router 7, Supabase, and Leaflet/OpenStreetMap.
 
 ## Run locally
 
@@ -8,23 +8,39 @@ Use Node 22.12+ (Node 24 LTS recommended). The lockfile pins the resolved depend
 
 ```sh
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
-PowerShell: use `Copy-Item .env.example .env.local`. If script execution policy blocks npm.ps1, use `npm.cmd` instead of `npm`.
-
-Open the URL printed by Vite. The app boots without keys: restaurants are clearly labelled demo fixtures, cart actions work in memory, and backend-dependent actions display setup messages. Cart data resets on reload. No real orders, payments, tables, or migrations are created.
+Add the Supabase values below to `.env.local` before using backend-backed features. If script execution policy blocks npm.ps1 on Windows, use `npm.cmd` instead of `npm`.
 
 ## Environment
 
-| Variable                      | Purpose                                                                       |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| VITE_SUPABASE_URL             | Project API URL from Supabase dashboard                                       |
-| VITE_SUPABASE_PUBLISHABLE_KEY | Browser publishable key beginning sb_publishable_                             |
-| VITE_API_BASE_URL             | Optional trusted non-Supabase HTTP API base URL                               |
+| Variable                      | Purpose                                           |
+| ----------------------------- | ------------------------------------------------- |
+| VITE_SUPABASE_URL             | Project API URL from Supabase dashboard           |
+| VITE_SUPABASE_PUBLISHABLE_KEY | Browser publishable key beginning sb_publishable_ |
+| VITE_API_BASE_URL             | Optional trusted non-Supabase HTTP API base URL   |
 
-Every VITE_ value is public in the browser bundle. Never add a Supabase secret or service-role key. Real env files are gitignored. Restart Vite after changing env.
+Every VITE_ value is public in the browser bundle. Never add a Supabase secret, Paystack key, or service-role key to .env.local. Real env files are gitignored. Restart Vite after changing env.
+
+## Paystack test checkout
+
+The customer checkout calls the `create_checkout` RPC to price current menu items, then invokes `paystack-initialize`. The return page invokes `paystack-verify`; `paystack-webhook` handles asynchronous success notifications, and admins use `paystack-refund` for refunds. Checkout requires a signed-in customer with an email address and real menu item IDs from an approved, open vendor. Demo menu items cannot be checked out.
+
+Apply all migrations in `supabase/migrations` in numeric order, through `0019_realtime_authorization.sql`. Use the Supabase CLI against the intended project (`supabase link` followed by `supabase db push`) or apply the files in order through the SQL editor. Do not apply the files out of order. Migration 0018 removes cash on delivery. Existing orders remain unpaid after that migration; review and reconcile any historical orders explicitly if they need to be visible to vendors. Migration 0019 scopes private live location broadcasts to the customer's order, its assigned rider, and admins while delivery is active.
+
+Deploy the functions the app invokes:
+
+```sh
+supabase functions deploy paystack-initialize
+supabase functions deploy paystack-verify
+supabase functions deploy paystack-webhook
+supabase functions deploy paystack-refund
+```
+
+Set `PAYSTACK_SECRET_KEY` and `SITE_URL` in Supabase Edge Function secrets. `SITE_URL` is the app origin, such as `http://localhost:5173` for local development. Configure the Paystack webhook URL as `https://<project-ref>.supabase.co/functions/v1/paystack-webhook`. Keep the Paystack secret out of `.env.local` and the browser bundle. `VITE_PAYMENT_MODE=test` only displays a test-mode notice; use Paystack test credentials in the Edge Function secret for test transactions.
+
+Paystack's return redirect does not itself mark orders paid. `paystack-verify` checks the reference, amount, currency, and transaction status with Paystack before marking payment and grouped orders as paid. The webhook provides a second confirmation path if the redirect arrives before Paystack's notification.
 
 Leaflet uses OpenStreetMap tiles and requires no map API key. Location sharing requires HTTPS outside localhost and explicit browser permission.
 
@@ -64,7 +80,7 @@ Tailwind v4 runs through `@tailwindcss/vite`; design tokens live in `src/index.c
 | /login, /register      | Supabase email/password authentication                          |
 | /vendors, /vendors/:id | Demo restaurant list and menu                                   |
 | /cart                  | Items grouped by vendor; integer kobo totals                    |
-| /checkout              | Delivery form validation; order creation explicitly unavailable |
+| /checkout              | Server-priced checkout and Paystack online payment             |
 | /orders/:id/track      | Signed-in tracking; requires an accessible real order UUID      |
 | /vendor/dashboard      | Approved vendor role                                            |
 | /rider/dashboard       | Approved rider role, queue and location sharing                 |
@@ -77,11 +93,11 @@ Anonymous tracking/dashboard visitors are redirected to login and returned after
 
 Roles come only from server-managed `user.app_metadata.role`: customer, vendor, rider, admin. Registration does not let users grant themselves roles. Provision customer roles through a trusted backend onboarding flow and approve vendor/rider roles separately. Unknown/missing roles cannot enter protected role layouts.
 
-Route guards are UI controls, not database security. Before connecting real data, implement RLS that scopes orders to the customer, participating vendors, assigned rider and approved administration. Never rely on a client-supplied role or price.
+Route guards are UI controls, not database security. Database RLS must scope orders to the customer, participating vendors, assigned rider, and approved administration. Never rely on a client-supplied role or price.
 
-## Supabase and realtime setup still required
+## Supabase project setup
 
-No Supabase project credentials or schema were provided. `database.types.ts` is explicitly a provisional contract, not fabricated generated output. The proposed orders row contains id, customer_id, rider_id, status, updated_at. Replace it after creating the real schema:
+The repository includes ordered migrations for the application schema, RLS, storage, payments, and Realtime authorization. A live Supabase project still needs those migrations and Edge Functions deployed. `database.types.ts` is a provisional contract; regenerate it after applying the migrations:
 
 ```sh
 npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > src/shared/types/database.types.ts
@@ -89,21 +105,17 @@ npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public >
 
 Generate via Supabase CLI using your own authenticated project, then align the consumers with the actual schema. Do not run this against an empty schema expecting the scaffold contract to remain.
 
-For live order status:
-
-1. Create the orders schema and appropriate RLS policies in the backend phase.
-2. Add orders to the supabase_realtime publication.
-3. Ensure updated_at advances for every status change.
-4. Test with an authorized signed-in account and accessible order UUID.
+For live order status, apply the migrations through `0019_realtime_authorization.sql`, then test with an authorized signed-in account and accessible order UUID. The migrations add `orders` to the `supabase_realtime` publication and define the database policies and triggers. Confirm the hosted project's schema matches before testing.
 
 `useOrderStatusChannel` subscribes to filtered Postgres UPDATE events, fetches the initial order after subscribing, refreshes on reconnection, validates rows, ignores older updates, and removes the channel on unmount/order change. Statuses: pending → accepted → preparing → picked_up → delivered, plus cancelled.
 
 For rider GPS:
 
-- Sender and receiver use the private topic `rider:<riderId>:location`, event `location`.
+- Rider sender, customer tracker, and admin dispatch map's location listener use the private topic `order-tracking-<orderId>`, event `position`.
 - Payload: riderId, lat, lng, accuracy (metres), timestamp (epoch milliseconds).
-- Both call Realtime setAuth before subscribing.
-- Add Realtime Authorization RLS policies on realtime.messages: only the matching approved rider may send; only participants in active assigned orders may receive. Enable private-only channels in Realtime settings.
+- All location channel clients call Realtime `setAuth()` before subscribing.
+- The admin dispatch order-change feed uses its own private `admin:dispatch-orders` topic and requires an admin session.
+- Migration `0019_realtime_authorization.sql` authorizes the assigned rider and admins to send, and the order's customer, assigned rider, and admins to receive while the delivery is active. Vendors and unrelated users are excluded. Enable private-only channels in Realtime settings.
 - The browser sender is opt-in, throttled to one tick per 3 seconds, and stops its geolocation watcher/channel on unmount or opt-out.
 - The receiver validates coordinates/identity and ignores older or far-future ticks. Broadcast is transient: the UI shows the last update time and waits for the next tick after reconnecting. It does not promise background tracking on a locked phone.
 - Realtime errors are surfaced. Policies/roles must be tested with separate customer, vendor and rider accounts before deployment.
@@ -114,18 +126,16 @@ There is no custom socket server or Socket.IO dependency.
 
 - Form: `features/auth/components/LoginForm.tsx`.
 - Typed store/actions: `features/ordering/store/cartStore.ts`. Composite vendor/item identity prevents cross-vendor collisions; quantities are 0–99, and zero removes an item.
-- Realtime: `features/dispatch-tracking/hooks/useOrderStatusChannel.ts` and `useLiveRiderLocation.ts`.
-- GPS sender: `features/rider/hooks/useBroadcastLocation.ts`.
+- Realtime: `features/dispatch-tracking/hooks/useOrderStatusChannel.ts` and `useLiveOrderPosition.ts`.
+- GPS sender: `features/rider/hooks/useActiveDeliveryLocation.ts`.
 - Supabase singleton: `shared/lib/supabaseClient.ts`, nullable only for unconfigured preview mode.
 - Axios singleton: `shared/lib/axiosClient.ts`, token attached only to the explicitly configured trusted API origin; errors retain Axios details. Supabase calls use the Supabase SDK directly.
 
 ## Scope and next three features
 
-1. Backend schema, RLS, account profiles and trusted customer/vendor/rider onboarding.
-2. Real vendor discovery and menu management, replacing demo fixtures.
-3. Atomic multi-vendor checkout and authorized dispatch assignment, then live tracking against real orders.
-
-Payment integration and full business workflows are intentionally outside this bootstrap. Production hosting must rewrite unknown application paths to index.html for browser routing.
+1. Verify migrations, Edge Functions, and RLS against the hosted Supabase project.
+2. Complete end-to-end tests for paid checkout, refunds, vendor/rider workflows, and multi-user dispatch.
+3. Replace remaining demo/placeholder areas and prepare production hosting with browser-route rewrites.
 
 ## Version decisions and references
 

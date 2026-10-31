@@ -28,7 +28,9 @@ export async function getServiceAreas(): Promise<ServiceArea[]> {
 export async function getVendorApplication(userId: string) {
   const { data, error } = await requireSupabase()
     .from('vendors')
-    .select('id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at')
+    .select(
+      'id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at',
+    )
     .eq('owner_id', userId)
     .maybeSingle()
   throwOnError(error)
@@ -40,7 +42,10 @@ async function uploadLogo(userId: string, file: File | undefined) {
   const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
   const path = `${userId}/${crypto.randomUUID()}.${extension}`
   const storage = requireSupabase().storage.from('vendor-logos')
-  const { error } = await storage.upload(path, file, { upsert: true, contentType: file.type })
+  const { error } = await storage.upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  })
   throwOnError(error)
   return storage.getPublicUrl(path).data.publicUrl
 }
@@ -63,7 +68,9 @@ export async function createVendorApplication(
       longitude: values.longitude,
       ...(logoUrl ? { logo_url: logoUrl } : {}),
     } as never)
-    .select('id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at')
+    .select(
+      'id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at',
+    )
     .single()
   throwOnError(error)
   return data as VendorApplication
@@ -88,20 +95,31 @@ export async function updateVendorApplication(
       ...(logoUrl ? { logo_url: logoUrl } : {}),
     } as never)
     .eq('id', vendorId)
-    .select('id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at')
+    .select(
+      'id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at',
+    )
     .single()
   throwOnError(error)
   return data as VendorApplication
 }
 
 export async function resubmitVendorApplication(vendorId: string) {
-  const { error } = await requireSupabase().rpc('resubmit_vendor_application' as never, {
-    target_vendor_id: vendorId,
-  } as never)
+  const { error } = await requireSupabase().rpc(
+    'resubmit_vendor_application' as never,
+    {
+      target_vendor_id: vendorId,
+    } as never,
+  )
   throwOnError(error)
 }
 
-export async function updateVendorOpenStatus(vendorId: string, isOpen: boolean) {
-  const { error } = await requireSupabase().from('vendors').update({ is_open: isOpen }).eq('id', vendorId)
+export async function updateVendorOpenStatus(
+  vendorId: string,
+  isOpen: boolean,
+) {
+  const { error } = await requireSupabase()
+    .from('vendors')
+    .update({ is_open: isOpen })
+    .eq('id', vendorId)
   throwOnError(error)
 }

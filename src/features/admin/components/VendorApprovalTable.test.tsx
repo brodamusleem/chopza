@@ -11,13 +11,29 @@ const vendor = {
 }
 it('links each pending vendor to its detail page', () => {
   render(
-    <MemoryRouter><VendorApprovalTable data={[vendor]} isLoading={false} error={null} refetch={vi.fn()} /></MemoryRouter>,
+    <MemoryRouter>
+      <VendorApprovalTable
+        data={[vendor]}
+        isLoading={false}
+        error={null}
+        refetch={vi.fn()}
+      />
+    </MemoryRouter>,
   )
-  expect(screen.getByRole('link', { name: 'View application' }).getAttribute('href')).toBe('/admin/vendors/test-vendor')
+  expect(
+    screen.getByRole('link', { name: 'View application' }).getAttribute('href'),
+  ).toBe('/admin/vendors/test-vendor')
 })
 it('keeps the vendor visible without inline actions', () => {
   render(
-    <MemoryRouter><VendorApprovalTable data={[vendor]} isLoading={false} error={null} refetch={vi.fn()} /></MemoryRouter>,
+    <MemoryRouter>
+      <VendorApprovalTable
+        data={[vendor]}
+        isLoading={false}
+        error={null}
+        refetch={vi.fn()}
+      />
+    </MemoryRouter>,
   )
   expect(screen.getByText('Test Kitchen')).toBeDefined()
   expect(screen.queryByRole('button', { name: /Approve|Reject/ })).toBeNull()

@@ -8,7 +8,12 @@ export async function login(values: LoginValues) {
   if (error) throw error
   return data
 }
-export async function register({ full_name, email, password, role = 'customer' }: RegisterValues & { role?: Role }) {
+export async function register({
+  full_name,
+  email,
+  password,
+  role = 'customer',
+}: RegisterValues & { role?: Role }) {
   const { data, error } = await requireSupabase().auth.signUp({
     email,
     password,

@@ -22,9 +22,7 @@ export function Component() {
       </Link>
       <div>
         <h1 className="text-3xl font-semibold">{vendor.name}</h1>
-        <p className="mt-3 text-muted-foreground">
-          {vendor.area} · Demo menu
-        </p>
+        <p className="mt-3 text-muted-foreground">{vendor.area} · Demo menu</p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
         {items.map((item) => (
