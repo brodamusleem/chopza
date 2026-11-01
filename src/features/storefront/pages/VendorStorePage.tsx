@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import {
   BadgeCheck,
-  Check,
   Heart,
   LockKeyhole,
   Minus,

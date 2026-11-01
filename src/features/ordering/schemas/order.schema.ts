@@ -14,6 +14,7 @@ export type OrderStatus = z.infer<typeof orderStatusSchema>
 export const orderSchema = z.object({
   id: z.uuid(),
   customer_id: z.uuid(),
+  vendor_id: z.uuid().optional(),
   rider_id: z.uuid().nullable(),
   cart_group_id: z.uuid().optional(),
   status: orderStatusSchema,

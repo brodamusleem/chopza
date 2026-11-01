@@ -14,18 +14,19 @@ export function Component() {
   const isTestMode = import.meta.env.VITE_PAYMENT_MODE === 'test'
 
   useEffect(() => {
-    const reference = searchParams.get('reference')
+    const reference = searchParams.get('reference') || searchParams.get('trxref')
     if (!reference) {
       setStatus('failed')
       setMessage('No payment reference was provided.')
       return
     }
+    const paymentReference = reference
 
     let active = true
     async function verify() {
       try {
         const { data, error } = await requireSupabase().functions.invoke('paystack-verify', {
-          body: { reference },
+          body: { reference: paymentReference },
         })
         if (!active) return
         if (error) throw new Error(error.message || 'Unable to verify payment.')
@@ -42,7 +43,7 @@ export function Component() {
           const current = await requireSupabase()
             .from('payments')
             .select('status, cart_group_id')
-            .eq('reference', reference)
+            .eq('reference', paymentReference)
             .maybeSingle()
           if (current.error) throw new Error(current.error.message)
           if (current.data?.status === 'paid') {
@@ -67,14 +68,14 @@ export function Component() {
             if (!active) return
             const poll = await requireSupabase()
               .from('payments')
-              .select('status')
-              .eq('reference', reference)
+              .select('status, cart_group_id')
+              .eq('reference', paymentReference)
               .maybeSingle()
             if (poll.error) throw new Error(poll.error.message)
             if (poll.data?.status === 'paid') {
               useCartStore.getState().clear()
               sessionStorage.removeItem('chopza-pending-payment-group')
-              const order = await requireSupabase().from('orders').select('id').eq('cart_group_id', current.data?.cart_group_id ?? '').order('created_at', { ascending: true }).limit(1).maybeSingle()
+              const order = await requireSupabase().from('orders').select('id').eq('cart_group_id', poll.data.cart_group_id).order('created_at', { ascending: true }).limit(1).maybeSingle()
               if (order.data?.id) setOrderUrl(`/orders/${order.data.id}`)
               setStatus('success')
               setMessage('Payment confirmed. Your order is now processing.')

@@ -41,7 +41,7 @@ export function AnimatedGreeting() {
     >
       <span
         key={greeting.language}
-        dir={greeting.dir ?? 'ltr'}
+        dir={'dir' in greeting ? greeting.dir : 'ltr'}
         className={
           reducedMotion
             ? ''

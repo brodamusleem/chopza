@@ -35,13 +35,13 @@ it('boots without credentials and exposes role entry points', async () => {
     await router.navigate('/vendors')
   })
   expect(
-    (await screen.findByRole('link', { name: 'Register as a vendor' })).getAttribute('href'),
+    (await screen.findAllByRole('link', { name: /Start selling on Chopza/ }))[0].getAttribute('href'),
   ).toBe('/register/vendor')
   await act(async () => {
     await router.navigate('/riders')
   })
   expect(
-    (await screen.findByRole('link', { name: 'Register as a rider' })).getAttribute('href'),
+    (await screen.findAllByRole('link', { name: /Become a rider/ }))[0].getAttribute('href'),
   ).toBe('/register/rider')
   await act(async () => {
     await router.navigate('/vendor/dashboard')

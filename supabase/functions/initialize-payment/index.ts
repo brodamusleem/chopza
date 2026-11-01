@@ -12,7 +12,9 @@ Deno.serve(async (request) => {
 
   try {
     const paystackSecret = await getPaystackSecret()
-    const callbackUrl = Deno.env.get('PAYMENT_RETURN_URL')
+    const configuredReturnUrl = Deno.env.get('PAYMENT_RETURN_URL')
+    const siteUrl = Deno.env.get('SITE_URL')?.replace(/\/+$/, '')
+    const callbackUrl = configuredReturnUrl || (siteUrl ? `${siteUrl}/checkout/verify` : null)
     if (!callbackUrl) throw new Error('PAYMENT_RETURN_URL is not configured.')
 
     const { userClient, adminClient } = getPaymentClients(request)
@@ -24,6 +26,12 @@ Deno.serve(async (request) => {
     const body = await request.json()
     const address = typeof body.address === 'string' ? body.address.trim() : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
+    const latitude = typeof body.latitude === 'number' && Number.isFinite(body.latitude) && body.latitude >= -90 && body.latitude <= 90
+      ? body.latitude
+      : null
+    const longitude = typeof body.longitude === 'number' && Number.isFinite(body.longitude) && body.longitude >= -180 && body.longitude <= 180
+      ? body.longitude
+      : null
     const items = Array.isArray(body.items) ? body.items : []
     if (address.length < 10 || items.length === 0 || items.length > 100) {
       return jsonResponse({ error: 'Delivery address or cart is invalid.' }, 400)
@@ -37,9 +45,10 @@ Deno.serve(async (request) => {
       checkoutItems.some(
         (item: { menu_item_id: unknown; quantity: unknown }) =>
           typeof item.menu_item_id !== 'string' ||
+          typeof item.quantity !== 'number' ||
           !Number.isInteger(item.quantity) ||
-          Number(item.quantity) < 1 ||
-          Number(item.quantity) > 50,
+          item.quantity < 1 ||
+          item.quantity > 50,
       )
     ) {
       return jsonResponse({ error: 'One or more cart quantities are invalid.' }, 400)
@@ -50,9 +59,8 @@ Deno.serve(async (request) => {
       {
         p_items: checkoutItems,
         p_delivery_address: address,
-        p_delivery_lat: null,
-        p_delivery_lng: null,
-        p_payment_method: 'online',
+        p_delivery_lat: latitude,
+        p_delivery_lng: longitude,
       },
     )
     if (checkoutError) throw checkoutError
@@ -106,7 +114,11 @@ Deno.serve(async (request) => {
       throw new Error(paystack.message || 'Paystack could not start the payment.')
     }
 
-    return jsonResponse({ authorizationUrl: paystack.data.authorization_url })
+    return jsonResponse({
+      authorizationUrl: paystack.data.authorization_url,
+      cartGroupId: checkout.out_cart_group_id,
+      reference,
+    })
   } catch (error) {
     console.error('initialize-payment failed:', error)
     return jsonResponse(

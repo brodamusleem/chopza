@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import {
   BadgeCheck,
   Beef,
-  Bike,
   CakeSlice,
   ChevronDown,
   Coffee,

@@ -83,7 +83,7 @@ export function useActiveDispatchOrders() {
         async () => {
           await readOrders()
         },
-      })
+      )
 
     void client.realtime
       .setAuth()

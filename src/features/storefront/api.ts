@@ -46,6 +46,7 @@ export async function getStorefrontSettings(): Promise<StorefrontSettings> {
     .eq('id', 1)
     .single()
   throwIfError(error)
+  if (!data) throw new Error('Storefront settings are not configured.')
   return data
 }
 

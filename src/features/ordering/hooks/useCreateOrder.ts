@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createCheckout, initializePayment } from '../api/orders.api'
+import { initializeCheckoutPayment, initializePayment } from '../api/orders.api'
 import type { CheckoutValues } from '../schemas/checkout.schema'
 import { useCartStore } from '../store/cartStore'
 
@@ -14,11 +14,10 @@ export function useCreateOrder() {
     setPending(true)
     setError(null)
     try {
-      const result = await createCheckout(values, useCartStore.getState().items)
+      const result = await initializeCheckoutPayment(values, useCartStore.getState().items)
       sessionStorage.setItem('chopza-pending-payment-group', result.cartGroupId)
       setPaymentGroupId(result.cartGroupId)
-      const { authorization_url } = await initializePayment(result.cartGroupId)
-      window.location.assign(authorization_url)
+      window.location.assign(result.authorizationUrl)
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : 'Unable to place order.',

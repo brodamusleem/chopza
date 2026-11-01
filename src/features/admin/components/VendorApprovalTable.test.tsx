@@ -40,12 +40,14 @@ it('keeps the vendor visible without inline actions', () => {
 })
 it('filters pending rows immediately as the user types', () => {
   render(
-    <VendorApprovalTable
-      data={[vendor]}
-      isLoading={false}
-      error={null}
-      refetch={vi.fn()}
-    />,
+    <MemoryRouter>
+      <VendorApprovalTable
+        data={[vendor]}
+        isLoading={false}
+        error={null}
+        refetch={vi.fn()}
+      />
+    </MemoryRouter>,
   )
   fireEvent.change(
     screen.getByRole('textbox', { name: 'Search pending vendors' }),

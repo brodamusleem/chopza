@@ -2,48 +2,38 @@ import type { CheckoutValues } from '../schemas/checkout.schema'
 import type { CartItem } from '../types'
 import { requireSupabase } from '@/shared/lib/supabaseClient'
 
-export type CheckoutResult = {
+export type CheckoutPaymentResult = {
   cartGroupId: string
-  orderId: string
-  total: number
+  authorizationUrl: string
+  reference: string
 }
 
-export async function createCheckout(
+export async function initializeCheckoutPayment(
   checkout: CheckoutValues,
   items: CartItem[],
-): Promise<CheckoutResult> {
+): Promise<CheckoutPaymentResult> {
   const supabase = requireSupabase()
-  const payload = {
-    p_items: items.map(({ menuItemId, quantity }) => ({
-      menu_item_id: menuItemId,
-      quantity,
-    })),
-    p_delivery_address: checkout.address,
-    p_delivery_lat: checkout.latitude ?? 0,
-    p_delivery_lng: checkout.longitude ?? 0,
+  const { data, error } = await supabase.functions.invoke<{
+    authorizationUrl?: string
+    cartGroupId?: string
+    reference?: string
+  }>('initialize-payment', {
+    body: {
+      address: checkout.address,
+      phone: checkout.phone,
+      latitude: checkout.latitude ?? null,
+      longitude: checkout.longitude ?? null,
+      items: items.map(({ menuItemId, quantity }) => ({ menuItemId, quantity })),
+    },
+  })
+  if (error) throw new Error(error.message || 'Unable to start Paystack payment.')
+  if (!data?.authorizationUrl || !data.cartGroupId || !data.reference) {
+    throw new Error('Payment initialization returned incomplete checkout details.')
   }
-
-  const { data, error } = await supabase.rpc('create_checkout', payload)
-  if (error) throw new Error(error.message || 'Unable to place order.')
-
-  const firstRow = Array.isArray(data) ? data[0] : null
-  const cartGroupId = firstRow?.out_cart_group_id
-  if (!cartGroupId) throw new Error('Checkout succeeded but returned no order reference.')
-
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .select('id')
-    .eq('cart_group_id', cartGroupId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (orderError) throw new Error(orderError.message || 'Unable to find your order.')
-
   return {
-    cartGroupId,
-    orderId: orderData?.id ?? cartGroupId,
-    total: Number(firstRow?.out_total ?? 0),
+    authorizationUrl: data.authorizationUrl,
+    cartGroupId: data.cartGroupId,
+    reference: data.reference,
   }
 }
 

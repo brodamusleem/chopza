@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { RotateCw } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { getAvailableDishes } from '../api'

@@ -25,7 +25,7 @@ Every VITE_ value is public in the browser bundle. Never add a Supabase secret, 
 
 ## Paystack test checkout
 
-The customer checkout calls the `create_checkout` RPC to price current menu items, then invokes `paystack-initialize`. The return page invokes `paystack-verify`; `paystack-webhook` handles asynchronous success notifications, and admins use `paystack-refund` for refunds. Checkout requires a signed-in customer with an email address and real menu item IDs from an approved, open vendor. Demo menu items cannot be checked out.
+The customer checkout invokes `initialize-payment`, which calls the `create_checkout` RPC to price current menu items and initializes Paystack. Retry attempts for existing unpaid orders use `paystack-initialize`. The return page invokes `paystack-verify`; `paystack-webhook` handles asynchronous success notifications, and admins use `paystack-refund` for refunds. Checkout requires a signed-in customer with an email address and real menu item IDs from an approved, open vendor. Demo menu items cannot be checked out.
 
 Apply all migrations in `supabase/migrations` in numeric order, through `0019_realtime_authorization.sql`. Use the Supabase CLI against the intended project (`supabase link` followed by `supabase db push`) or apply the files in order through the SQL editor. Do not apply the files out of order. Migration 0018 removes cash on delivery. Existing orders remain unpaid after that migration; review and reconcile any historical orders explicitly if they need to be visible to vendors. Migration 0019 scopes private live location broadcasts to the customer's order, its assigned rider, and admins while delivery is active.
 
@@ -33,12 +33,13 @@ Deploy the functions the app invokes:
 
 ```sh
 supabase functions deploy paystack-initialize
+supabase functions deploy initialize-payment
 supabase functions deploy paystack-verify
 supabase functions deploy paystack-webhook
 supabase functions deploy paystack-refund
 ```
 
-Set `PAYSTACK_SECRET_KEY` and `SITE_URL` in Supabase Edge Function secrets. `SITE_URL` is the app origin, such as `http://localhost:5173` for local development. Configure the Paystack webhook URL as `https://<project-ref>.supabase.co/functions/v1/paystack-webhook`. Keep the Paystack secret out of `.env.local` and the browser bundle. `VITE_PAYMENT_MODE=test` only displays a test-mode notice; use Paystack test credentials in the Edge Function secret for test transactions.
+Set `PAYSTACK_SECRET_KEY` and `SITE_URL` in Supabase Edge Function secrets. `SITE_URL` is the app origin, such as `http://localhost:5173` for local development; checkout returns to `/checkout/verify`. Optionally set `PAYMENT_RETURN_URL` to override the full callback URL. Configure Paystack to send webhook events to `https://wkfmyoxodcoldbcfnytl.supabase.co/functions/v1/Paystack-Webhook`. Keep the Paystack secret out of `.env.local` and the browser bundle. `VITE_PAYMENT_MODE=test` only displays a test-mode notice; use Paystack test credentials in the Edge Function secret for test transactions.
 
 Paystack's return redirect does not itself mark orders paid. `paystack-verify` checks the reference, amount, currency, and transaction status with Paystack before marking payment and grouped orders as paid. The webhook provides a second confirmation path if the redirect arrives before Paystack's notification.
 
