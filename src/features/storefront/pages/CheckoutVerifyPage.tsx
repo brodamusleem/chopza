@@ -24,6 +24,21 @@ type ReceiptOrder = {
 
 type Receipt = { orders: ReceiptOrder[]; items: ReceiptItem[] }
 
+async function getFunctionErrorMessage(error: unknown) {
+  if (error && typeof error === 'object' && 'context' in error) {
+    const context = error.context
+    if (context instanceof Response) {
+      try {
+        const body = await context.clone().json() as { error?: string; message?: string }
+        if (body.error || body.message) return body.error || body.message
+      } catch {
+        // Keep the SDK message if the response body is not JSON.
+      }
+    }
+  }
+  return error instanceof Error ? error.message : 'Unable to verify payment.'
+}
+
 export function Component() {
   const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading')
@@ -79,7 +94,6 @@ export function Component() {
           body: { reference },
         })
         if (!active) return
-        if (error) throw new Error(error.message || 'Unable to verify payment.')
         if (data?.verified && data.cart_group_id) {
           await finishPayment(data.cart_group_id)
           return
@@ -95,13 +109,16 @@ export function Component() {
           await finishPayment(current.cart_group_id)
           return
         }
+        const verifyErrorMessage = error ? await getFunctionErrorMessage(error) : null
         if (data?.status === 'abandoned' || data?.status === 'failed') {
           setStatus('failed')
           setMessage(`Payment ${String(data.status)}. You can retry from checkout.`)
           return
         }
 
-        setMessage('Your bank has responded. We’re waiting for the final payment confirmation…')
+        setMessage(error
+          ? 'Paystack returned you here successfully. We’re checking your saved payment status before showing the result…'
+          : 'Your bank has responded. We’re waiting for the final payment confirmation…')
         for (let attempt = 0; attempt < 15; attempt += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 2000))
           if (!active) return
@@ -122,11 +139,13 @@ export function Component() {
           }
         }
         setStatus('failed')
-        setMessage('Payment is still unconfirmed. Your cart is safe; please check your orders before trying again.')
+        setMessage(verifyErrorMessage
+          ? `We could not confirm the payment yet: ${verifyErrorMessage}`
+          : 'Payment is still unconfirmed. Your cart is safe; please check your orders before trying again.')
       } catch (error) {
         if (!active) return
         setStatus('failed')
-        setMessage(error instanceof Error ? error.message : 'Unable to verify payment.')
+        setMessage(await getFunctionErrorMessage(error))
       }
     }
 
