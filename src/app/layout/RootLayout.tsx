@@ -22,45 +22,45 @@ export function RootLayout() {
       </a>
       {showShellHeader && (
         <header className="sticky top-0 z-50 border-b border-foreground/8 bg-background/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div className="mx-auto flex max-w-7xl flex-col items-stretch gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4">
             <Link
               to="/"
-              className="flex items-center gap-2 text-2xl font-black tracking-[-0.06em] text-foreground"
+              className="flex w-fit items-center gap-2 text-xl font-black tracking-[-0.06em] text-foreground sm:text-2xl"
             >
               <UtensilsCrossed size={25} aria-hidden="true" />
               chopza<span className="text-primary">.</span>
             </Link>
             <nav
               aria-label="Main navigation"
-              className="flex flex-wrap items-center justify-end gap-1 text-sm font-semibold sm:gap-2"
+              className="-mx-1 flex max-w-full items-center justify-start gap-1 overflow-x-auto pb-1 text-xs font-semibold whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:justify-end sm:gap-2 sm:overflow-visible sm:pb-0 sm:text-sm"
             >
               <Link
                 to="/company"
-                className="rounded-full px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="shrink-0 rounded-full px-2.5 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:px-3"
               >
                 Company
               </Link>
               <Link
                 to="/vendors"
-                className="rounded-full px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="shrink-0 rounded-full px-2.5 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:px-3"
               >
                 Vendors
               </Link>
               <Link
                 to="/riders"
-                className="rounded-full px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="shrink-0 rounded-full px-2.5 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:px-3"
               >
                 Riders
               </Link>
               <Link
                 to="/login"
-                className="rounded-full px-3 py-2 text-foreground transition-colors hover:bg-secondary"
+                className="shrink-0 rounded-full px-2.5 py-2 text-foreground transition-colors hover:bg-secondary sm:px-3"
               >
                 Log in
               </Link>
               <Link
                 to="/explore"
-                className="rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:-translate-y-0.5 hover:bg-primary/90"
+                className="shrink-0 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:-translate-y-0.5 hover:bg-primary/90 sm:px-4"
               >
                 Order food
               </Link>

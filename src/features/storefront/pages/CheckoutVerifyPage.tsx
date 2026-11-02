@@ -30,7 +30,8 @@ async function getFunctionErrorMessage(error: unknown) {
     if (context instanceof Response) {
       try {
         const body = await context.clone().json() as { error?: string; message?: string }
-        if (body.error || body.message) return body.error || body.message
+        const message = body.error || body.message
+        if (message) return message
       } catch {
         // Keep the SDK message if the response body is not JSON.
       }
@@ -53,6 +54,7 @@ export function Component() {
       setMessage('No payment reference was provided.')
       return
     }
+    const paymentReference = reference
 
     let active = true
     const supabase = requireSupabase()
@@ -91,7 +93,7 @@ export function Component() {
     async function verify() {
       try {
         const { data, error } = await supabase.functions.invoke('paystack-verify', {
-          body: { reference },
+          body: { reference: paymentReference },
         })
         if (!active) return
         if (data?.verified && data.cart_group_id) {
@@ -102,7 +104,7 @@ export function Component() {
         const { data: current, error: currentError } = await supabase
           .from('payments')
           .select('status, cart_group_id')
-          .eq('reference', reference)
+          .eq('reference', paymentReference)
           .maybeSingle()
         if (currentError) throw currentError
         if (current?.status === 'paid') {
@@ -125,7 +127,7 @@ export function Component() {
           const { data: payment, error: pollError } = await supabase
             .from('payments')
             .select('status, cart_group_id')
-            .eq('reference', reference)
+            .eq('reference', paymentReference)
             .maybeSingle()
           if (pollError) throw pollError
           if (payment?.status === 'paid') {
@@ -159,52 +161,52 @@ export function Component() {
   const itemCount = receipt?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-gradient-to-b from-amber-50/80 via-background to-background px-4 py-10 sm:py-16">
+    <main className="min-h-[calc(100vh-5rem)] bg-gradient-to-b from-amber-50/80 via-background to-background px-3 py-7 sm:px-4 sm:py-16">
       <div className="mx-auto max-w-2xl">
         {isTestMode && <Badge variant="secondary" className="mb-4">Test mode · no real money charged</Badge>}
-        <Card className="overflow-hidden rounded-3xl border-0 shadow-xl shadow-amber-950/10">
-          <div className={`px-6 pb-8 pt-10 text-center text-white sm:px-10 ${status === 'success' ? 'bg-gradient-to-br from-emerald-600 to-teal-700' : status === 'failed' ? 'bg-gradient-to-br from-rose-600 to-orange-700' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}>
-            <div className="mx-auto mb-5 grid size-20 place-items-center rounded-full border border-white/30 bg-white/15 shadow-inner">
-              {status === 'success' ? <Check className="size-10" strokeWidth={3} /> : status === 'failed' ? <Clock3 className="size-9" /> : <UtensilsCrossed className="size-9 animate-pulse" />}
+        <Card className="overflow-hidden rounded-2xl border-0 shadow-xl shadow-amber-950/10 sm:rounded-3xl">
+          <div className={`px-4 pb-7 pt-8 text-center text-white sm:px-10 sm:pb-8 sm:pt-10 ${status === 'success' ? 'bg-gradient-to-br from-emerald-600 to-teal-700' : status === 'failed' ? 'bg-gradient-to-br from-rose-600 to-orange-700' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}>
+            <div className="mx-auto mb-4 grid size-16 place-items-center rounded-full border border-white/30 bg-white/15 shadow-inner sm:mb-5 sm:size-20">
+              {status === 'success' ? <Check className="size-8 sm:size-10" strokeWidth={3} /> : status === 'failed' ? <Clock3 className="size-8 sm:size-9" /> : <UtensilsCrossed className="size-8 sm:size-9 animate-pulse" />}
             </div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-white/80">{status === 'success' ? 'Payment complete' : status === 'failed' ? 'Payment update' : 'One moment'}</p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{status === 'success' ? 'Your meal is on its way!' : status === 'failed' ? 'We couldn’t confirm that' : 'Confirming your payment'}</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">{status === 'success' ? 'Your meal is on its way!' : status === 'failed' ? 'We couldn’t confirm that' : 'Confirming your payment'}</h1>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/85 sm:text-base">{message}</p>
           </div>
 
           {status === 'success' && receipt && (
-            <CardContent className="space-y-6 p-5 sm:p-8">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/60 p-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><PackageCheck className="size-5" /></span>
-                  <div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Order reference</p><p className="font-mono text-sm font-bold">{receipt.orders.length === 1 ? receipt.orders[0].id : `${receipt.orders.length} orders`}</p></div>
+            <CardContent className="space-y-5 p-4 sm:space-y-6 sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-muted/60 p-3 sm:gap-3 sm:p-4">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm sm:size-11"><PackageCheck className="size-5" /></span>
+                  <div className="min-w-0"><p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">Order reference</p><p className="break-all font-mono text-xs font-bold sm:text-sm">{receipt.orders.length === 1 ? receipt.orders[0].id : `${receipt.orders.length} orders`}</p></div>
                 </div>
-                <Badge className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800 hover:bg-emerald-100"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-600" />Paid</Badge>
+                <Badge className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-800 hover:bg-emerald-100 sm:px-3"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-600" />Paid</Badge>
               </div>
 
               <section>
-                <div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2 font-semibold"><ShoppingBag className="size-4 text-orange-600" />Your order</h2><span className="text-sm text-muted-foreground">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div>
+                <div className="mb-3 flex items-center justify-between sm:mb-4"><h2 className="flex items-center gap-2 text-sm font-semibold sm:text-base"><ShoppingBag className="size-4 text-orange-600" />Your order</h2><span className="text-xs text-muted-foreground sm:text-sm">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div>
                 <div className="divide-y rounded-2xl border">
                   {receipt.items.length ? receipt.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
-                      {item.menu_items?.image_url ? <img src={item.menu_items.image_url} alt="" className="size-14 rounded-xl object-cover sm:size-16" /> : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-600 sm:size-16"><UtensilsCrossed className="size-5" /></span>}
-                      <div className="min-w-0 flex-1"><p className="truncate font-medium">{item.menu_items?.name ?? 'Menu item'}</p><p className="mt-1 text-sm text-muted-foreground">Qty {item.quantity} · {formatNaira(Math.round(Number(item.unit_price) * 100))} each</p></div>
-                      <p className="shrink-0 text-sm font-semibold">{formatNaira(Math.round(Number(item.unit_price) * item.quantity * 100))}</p>
+                    <div key={item.id} className="flex items-center gap-2.5 p-3 sm:gap-4 sm:p-4">
+                      {item.menu_items?.image_url ? <img src={item.menu_items.image_url} alt="" className="size-11 shrink-0 rounded-xl object-cover sm:size-16" /> : <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-600 sm:size-16"><UtensilsCrossed className="size-5" /></span>}
+                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium sm:text-base">{item.menu_items?.name ?? 'Menu item'}</p><p className="mt-1 text-xs text-muted-foreground sm:text-sm">Qty {item.quantity} · {formatNaira(Math.round(Number(item.unit_price) * 100))} each</p></div>
+                      <p className="max-w-[88px] text-right text-xs font-semibold sm:max-w-none sm:text-sm">{formatNaira(Math.round(Number(item.unit_price) * item.quantity * 100))}</p>
                     </div>
                   )) : <p className="p-5 text-sm text-muted-foreground">Your payment is confirmed. Order items are still loading.</p>}
                 </div>
               </section>
 
               <div className="space-y-2 border-t pt-4">
-                {receipt.orders.map((order) => <div key={order.id} className="flex justify-between gap-3 text-sm text-muted-foreground"><span className="flex items-center gap-2"><MapPin className="size-4" />Order {order.id.slice(0, 8)}</span><span>{formatNaira(Math.round(Number(order.total_amount) * 100))}</span></div>)}
-                <div className="flex items-center justify-between pt-2 text-base font-bold"><span>Total paid</span><span className="text-lg text-orange-700">{formatNaira(Math.round(total * 100))}</span></div>
+                {receipt.orders.map((order) => <div key={order.id} className="flex justify-between gap-3 text-xs text-muted-foreground sm:text-sm"><span className="flex min-w-0 items-center gap-2"><MapPin className="size-4 shrink-0" />Order {order.id.slice(0, 8)}</span><span className="shrink-0">{formatNaira(Math.round(Number(order.total_amount) * 100))}</span></div>)}
+                <div className="flex items-center justify-between gap-3 pt-2 text-sm font-bold sm:text-base"><span>Total paid</span><span className="shrink-0 text-base text-orange-700 sm:text-lg">{formatNaira(Math.round(total * 100))}</span></div>
               </div>
 
-              <div className="flex flex-col gap-3 pt-1 sm:flex-row">
-                <Button asChild className="h-12 flex-1 rounded-xl bg-orange-600 font-semibold hover:bg-orange-700">
+              <div className="flex flex-col gap-2.5 pt-1 sm:flex-row sm:gap-3">
+                <Button asChild className="h-11 w-full flex-1 rounded-xl bg-orange-600 text-sm font-semibold hover:bg-orange-700 sm:h-12">
                   <Link to={receipt.orders[0]?.id ? `/orders/${receipt.orders[0].id}` : '/orders'}>Track your order <ArrowRight className="ml-2 size-4" /></Link>
                 </Button>
-                <Button asChild variant="outline" className="h-12 rounded-xl"><Link to="/explore">Order something else</Link></Button>
+                <Button asChild variant="outline" className="h-11 w-full rounded-xl text-sm sm:h-12 sm:w-auto"><Link to="/explore">Order something else</Link></Button>
               </div>
             </CardContent>
           )}

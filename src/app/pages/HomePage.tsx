@@ -66,31 +66,31 @@ const steps = [
 
 export function Component() {
   return (
-    <div className="space-y-24 pb-10 sm:space-y-32">
-      <section className="hero-shine relative isolate overflow-hidden rounded-[2rem] bg-[#32140c] px-6 py-10 text-[#fff8f3] sm:px-10 sm:py-16 lg:px-14 lg:py-20">
+    <div className="space-y-16 pb-8 sm:space-y-24 sm:pb-10 lg:space-y-32">
+      <section className="hero-shine relative isolate overflow-hidden rounded-3xl bg-[#32140c] px-4 py-8 text-[#fff8f3] sm:rounded-[2rem] sm:px-10 sm:py-16 lg:px-14 lg:py-20">
         <div className="absolute -top-24 -left-16 size-72 rounded-full bg-[#ff8d4d]/30 blur-3xl" />
         <div className="absolute right-0 bottom-0 size-80 rounded-full bg-[#f6b33f]/15 blur-3xl" />
-        <div className="relative grid gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+        <div className="relative grid gap-8 sm:gap-12 lg:grid-cols-[1fr_0.9fr] lg:items-center">
           <div className="max-w-2xl">
-            <Badge className="mb-7 border-0 bg-[#ffdd70] px-3 text-[#4a2108]">
+            <Badge className="mb-5 max-w-full border-0 bg-[#ffdd70] px-3 py-1 text-xs leading-5 text-[#4a2108] sm:mb-7 sm:text-sm">
               <MapPin aria-hidden="true" /> Kano’s local food delivery spot
             </Badge>
             <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[#ffc8aa] uppercase">
               Your next good meal is nearby
             </p>
-            <h1 className="text-5xl leading-[0.94] font-black tracking-[-0.06em] sm:text-7xl">
+            <h1 className="text-4xl leading-[0.98] font-black tracking-[-0.06em] sm:text-6xl lg:text-7xl">
               <AnimatedGreeting />
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-[#f7d9ca]">
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#f7d9ca] sm:mt-7 sm:text-lg sm:leading-8">
               From familiar favourites to something new, Chopza brings Kano’s
               kitchens closer—with live tracking from the first stir to your
               doorstep.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-col gap-3 sm:mt-9 sm:flex-row sm:flex-wrap">
               <Button
                 asChild
                 size="lg"
-                className="rounded-full bg-[#ffdd70] px-6 text-[#3b180d] hover:bg-[#ffe89d]"
+                className="h-11 w-full rounded-full bg-[#ffdd70] px-5 text-[#3b180d] hover:bg-[#ffe89d] sm:w-auto sm:px-6"
               >
                 <Link to="/explore">
                   Order food <ArrowRight aria-hidden="true" />
@@ -100,13 +100,13 @@ export function Component() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="rounded-full border-[#fff8f3]/25 bg-transparent text-[#fff8f3] hover:bg-white/10 hover:text-white"
+                className="h-11 w-full rounded-full border-[#fff8f3]/25 bg-transparent text-[#fff8f3] hover:bg-white/10 hover:text-white sm:w-auto"
               >
                 <Link to="/vendors">List your restaurant</Link>
               </Button>
             </div>
           </div>
-          <div className="relative mx-auto h-[350px] w-full max-w-md sm:h-[430px]">
+          <div className="relative mx-auto h-[270px] w-full max-w-[320px] sm:h-[400px] sm:max-w-md lg:h-[430px]">
             <div className="float-gentle absolute top-0 left-2 h-[72%] w-[64%] overflow-hidden rounded-[2rem] border-4 border-[#fff8f3]/90 shadow-2xl">
               <img
                 src={foodImages[0]}
@@ -133,16 +133,16 @@ export function Component() {
       </section>
 
       <section
-        className="grid gap-5 md:grid-cols-3"
+        className="grid gap-4 sm:gap-5 md:grid-cols-3"
         aria-label="Chopza audiences"
       >
         {roles.map(({ icon: Icon, title, text, action, href }) => (
           <Link
             key={title}
             to={href}
-            className="group rounded-[1.5rem] border bg-card p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10"
+            className="group rounded-2xl border bg-card p-5 transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 sm:rounded-[1.5rem] sm:p-6"
           >
-            <Icon className="mb-8 size-8 text-primary" aria-hidden="true" />
+            <Icon className="mb-5 size-7 text-primary sm:mb-8 sm:size-8" aria-hidden="true" />
             <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
             <p className="mt-2 leading-6 text-muted-foreground">{text}</p>
             <span className="mt-7 inline-flex items-center gap-2 font-bold text-primary">
@@ -153,12 +153,12 @@ export function Component() {
         ))}
       </section>
 
-      <section className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+      <section className="grid gap-7 sm:gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
         <div>
           <p className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
             Made to feel local
           </p>
-          <h2 className="mt-4 text-4xl font-black tracking-[-0.05em] sm:text-5xl">
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:mt-4 sm:text-5xl">
             Food discovery, without the guesswork.
           </h2>
           <p className="mt-5 max-w-md leading-7 text-muted-foreground">
@@ -171,15 +171,15 @@ export function Component() {
             </Link>
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
           <img
             src={foodImages[2]}
             alt="Warm bowl of food"
-            className="float-slow mt-8 h-64 w-full rounded-[2rem] object-cover shadow-lg sm:h-80"
+            className="float-slow h-56 w-full rounded-3xl object-cover shadow-lg sm:mt-8 sm:h-80 sm:rounded-[2rem]"
           />
-          <div className="rounded-[2rem] bg-secondary p-6 sm:p-8">
+          <div className="rounded-3xl bg-secondary p-6 sm:rounded-[2rem] sm:p-8">
             <Sparkles className="size-8 text-primary" aria-hidden="true" />
-            <p className="mt-12 text-xl font-bold leading-tight">
+            <p className="mt-8 text-xl font-bold leading-tight sm:mt-12">
               Made for the places and flavours Kano calls home.
             </p>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
@@ -189,16 +189,16 @@ export function Component() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-foreground px-6 py-12 text-background sm:px-10 sm:py-16">
+      <section className="rounded-3xl bg-foreground px-5 py-9 text-background sm:rounded-[2rem] sm:px-10 sm:py-16">
         <div className="max-w-xl">
           <p className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
             Simple from start to finish
           </p>
-          <h2 className="mt-3 text-4xl font-black tracking-[-0.05em]">
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-4xl">
             A better way to get dinner sorted.
           </h2>
         </div>
-        <div className="mt-12 grid gap-8 md:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:mt-12 sm:gap-8 md:grid-cols-3">
           {steps.map(({ icon: Icon, number, title, text }) => (
             <div key={number} className="border-t border-background/20 pt-5">
               <div className="flex items-center justify-between">
@@ -207,19 +207,19 @@ export function Component() {
                   {number}
                 </span>
               </div>
-              <h3 className="mt-8 text-xl font-bold">{title}</h3>
+              <h3 className="mt-5 text-xl font-bold sm:mt-8">{title}</h3>
               <p className="mt-2 leading-6 text-background/65">{text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-2">
-        <div className="rounded-[2rem] bg-[#ffcf84] p-8 sm:p-10">
+      <section className="grid gap-5 sm:gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl bg-[#ffcf84] p-6 sm:rounded-[2rem] sm:p-10">
           <p className="text-xs font-bold tracking-[0.2em] text-[#61300d] uppercase">
             For food lovers
           </p>
-          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-[#3b180d]">
+          <h2 className="mt-3 text-2xl font-black tracking-[-0.05em] text-[#3b180d] sm:text-3xl">
             Your new favourite meal might be one tap away.
           </h2>
           <Button
@@ -231,11 +231,11 @@ export function Component() {
             </Link>
           </Button>
         </div>
-        <div className="rounded-[2rem] bg-primary p-8 text-primary-foreground sm:p-10">
+        <div className="rounded-3xl bg-primary p-6 text-primary-foreground sm:rounded-[2rem] sm:p-10">
           <p className="text-xs font-bold tracking-[0.2em] text-primary-foreground/70 uppercase">
             For local businesses
           </p>
-          <h2 className="mt-3 text-3xl font-black tracking-[-0.05em]">
+          <h2 className="mt-3 text-2xl font-black tracking-[-0.05em] sm:text-3xl">
             Turn every hungry scroll into a possible order.
           </h2>
           <Button

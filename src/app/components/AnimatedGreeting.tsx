@@ -36,7 +36,7 @@ export function AnimatedGreeting() {
 
   return (
     <span
-      className="flex h-[1.15em] items-center overflow-hidden"
+      className="block min-h-[2.1em] overflow-hidden lg:flex lg:h-auto lg:items-center"
       aria-live="polite"
     >
       <span
