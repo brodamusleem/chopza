@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import type { Role } from '@/shared/constants/roles'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { AuthNotice } from './AuthNotice'
 import {
   Form,
   FormControl,
@@ -37,7 +38,7 @@ export function SignupForm({
   return (
     <Form {...form}>
       <form
-        className="space-y-5"
+        className="space-y-4 sm:space-y-5"
         onSubmit={form.handleSubmit(async (values) => {
           setMessage('')
           try {
@@ -75,7 +76,7 @@ export function SignupForm({
             <FormItem>
               <FormLabel>Your full name</FormLabel>
               <FormControl>
-                <Input autoComplete="name" {...field} />
+                <Input autoComplete="name" placeholder="Your name" className="h-12 rounded-xl bg-background px-4" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,7 +89,7 @@ export function SignupForm({
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" {...field} />
+                <Input type="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl bg-background px-4" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -101,7 +102,7 @@ export function SignupForm({
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" autoComplete="new-password" {...field} />
+                <Input type="password" autoComplete="new-password" placeholder="Create a password" className="h-12 rounded-xl bg-background px-4" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -114,20 +115,18 @@ export function SignupForm({
             <FormItem>
               <FormLabel>Confirm password</FormLabel>
               <FormControl>
-                <Input type="password" autoComplete="new-password" {...field} />
+                <Input type="password" autoComplete="new-password" placeholder="Enter it again" className="h-12 rounded-xl bg-background px-4" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         {form.formState.errors.root && (
-          <p role="alert" className="text-sm text-destructive">
-            {form.formState.errors.root.message}
-          </p>
+          <AuthNotice variant="error">{form.formState.errors.root.message}</AuthNotice>
         )}
-        {message && <p role="status">{message}</p>}
+        {message && <AuthNotice variant="success">{message}</AuthNotice>}
         <Button
-          className="w-full"
+          className="h-12 w-full rounded-xl text-base font-semibold shadow-md shadow-primary/15"
           disabled={form.formState.isSubmitting}
           type="submit"
         >

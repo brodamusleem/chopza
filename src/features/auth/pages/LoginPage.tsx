@@ -1,20 +1,30 @@
 import { useLocation } from 'react-router'
+import type { Role } from '@/shared/constants/roles'
+import { AuthNotice } from '../components/AuthNotice'
+import { AuthPageShell } from '../components/AuthPageShell'
 import { LoginForm } from '../components/LoginForm'
+
+type LoginLocationState = { message?: string; role?: Role } | null
+
 export function Component() {
   const location = useLocation()
-  const state = location.state as { message?: string } | null
+  const state = location.state as LoginLocationState
+
   return (
-    <section className="mx-auto max-w-md rounded-2xl border bg-card p-7">
-      <h1 className="mb-2 text-3xl font-semibold">Welcome back</h1>
-      <p className="mb-7 text-muted-foreground">
-        Sign in to your Chopza account.
-      </p>
+    <AuthPageShell
+      title="Welcome back"
+      subtitle="Sign in and pick up right where you left off."
+      initialRole={state?.role ?? 'customer'}
+    >
       {state?.message && (
-        <p role="status" className="mb-5 text-sm text-primary">
-          {state.message}
-        </p>
+        <div className="mb-5">
+          <AuthNotice variant="success">
+            <p className="font-semibold">You’re almost in</p>
+            <p className="mt-0.5 opacity-90">{state.message}</p>
+          </AuthNotice>
+        </div>
       )}
       <LoginForm />
-    </section>
+    </AuthPageShell>
   )
 }

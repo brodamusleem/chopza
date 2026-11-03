@@ -1,16 +1,21 @@
 import { Link } from 'react-router'
 import { SignupForm } from '@/features/auth'
+import { AuthPageShell } from '@/features/auth/components/AuthPageShell'
+
 export function Component() {
   return (
-    <section className="mx-auto max-w-md rounded-2xl border bg-card p-7">
-      <h1 className="mb-2 text-3xl font-semibold">Sell on Chopza</h1>
-      <p className="mb-7 text-muted-foreground">
-        Create an account to submit your restaurant for review.
-      </p>
+    <AuthPageShell
+      title="Sell on Chopza"
+      subtitle="Create a partner account and bring your restaurant to more customers."
+      initialRole="vendor"
+    >
       <SignupForm role="vendor" redirectTo="/vendor/onboarding" />
-      <Link className="mt-5 block text-sm underline" to="/login">
-        Already have an account? Sign in
-      </Link>
-    </section>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link className="font-semibold text-primary underline-offset-4 hover:underline" to="/login">
+          Sign in
+        </Link>
+      </p>
+    </AuthPageShell>
   )
 }

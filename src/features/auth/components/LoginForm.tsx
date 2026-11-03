@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
+import { AuthNotice } from './AuthNotice'
 import { loginSchema, type LoginValues } from '../schemas/login.schema'
 import { getProfileRole, login } from '../api/auth.api'
 import { useAuthStore } from '../store/authStore'
@@ -76,6 +77,8 @@ export function LoginForm() {
           id="email"
           type="email"
           autoComplete="email"
+          placeholder="you@example.com"
+          className="h-12 rounded-xl bg-background px-4"
           {...register('email')}
           aria-invalid={!!errors.email}
           aria-describedby={errors.email ? 'email-error' : undefined}
@@ -92,6 +95,8 @@ export function LoginForm() {
           id="password"
           type="password"
           autoComplete="current-password"
+          placeholder="Enter your password"
+          className="h-12 rounded-xl bg-background px-4"
           {...register('password')}
           aria-invalid={!!errors.password}
           aria-describedby={errors.password ? 'password-error' : undefined}
@@ -103,16 +108,14 @@ export function LoginForm() {
         )}
       </div>
       {errors.root && (
-        <p role="alert" className="text-sm text-destructive">
-          {errors.root.message}
-        </p>
+        <AuthNotice variant="error">{errors.root.message}</AuthNotice>
       )}
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold shadow-md shadow-primary/15" disabled={isSubmitting}>
         {isSubmitting ? 'Signing in…' : 'Sign in'}
       </Button>
-      <p className="text-sm">
+      <p className="pt-1 text-center text-sm text-muted-foreground">
         New to Chopza?{' '}
-        <Link className="underline" to="/register">
+        <Link className="font-semibold text-primary underline-offset-4 hover:underline" to="/register">
           Create an account
         </Link>
       </p>
