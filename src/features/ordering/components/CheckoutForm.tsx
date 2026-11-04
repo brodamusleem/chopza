@@ -8,12 +8,14 @@ import { useCreateOrder } from '../hooks/useCreateOrder'
 import { useCart } from '../hooks/useCart'
 import { useState } from 'react'
 import { LocationPicker } from '@/features/vendors/components/onboarding/LocationPicker'
+import { useDeliveryLocation } from '@/features/storefront/state'
 
 export function CheckoutForm() {
   const { submit, retryPayment, paymentGroupId, pending, error } = useCreateOrder()
   const { items } = useCart()
-  const [latitude, setLatitude] = useState<number | null>(null)
-  const [longitude, setLongitude] = useState<number | null>(null)
+  const deliveryLocation = useDeliveryLocation()
+  const [latitude, setLatitude] = useState<number | null>(deliveryLocation.latitude)
+  const [longitude, setLongitude] = useState<number | null>(deliveryLocation.longitude)
   const {
     register,
     handleSubmit,
@@ -21,8 +23,9 @@ export function CheckoutForm() {
   } = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      latitude: null,
-      longitude: null,
+      address: deliveryLocation.address,
+      latitude: deliveryLocation.latitude,
+      longitude: deliveryLocation.longitude,
     },
   })
 

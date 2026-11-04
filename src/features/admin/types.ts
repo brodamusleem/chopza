@@ -34,8 +34,25 @@ export type DashboardStats = {
   pendingRiders: number
   ordersToday: number
   inTransit: number
+  totalOrders: number
+  pendingOrders: number
+  totalRevenue: number
 }
 export type OrdersPerDay = { date: string; label: string; orders: number }[]
+export type DashboardRevenuePoint = { date: string; label: string; revenue: number }
+export type DashboardOrderStatus = { status: string; count: number }
+export type DashboardTopVendor = {
+  id: string
+  name: string
+  orders: number
+  revenue: number
+}
+export type DashboardAnalytics = {
+  revenueByDay: DashboardRevenuePoint[]
+  ordersThisWeek: number
+  orderStatuses: DashboardOrderStatus[]
+  topVendors: DashboardTopVendor[]
+}
 export type QueryResult<T> = {
   data: T | undefined
   isLoading: boolean

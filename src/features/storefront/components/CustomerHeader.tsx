@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import {
+  ArrowRight,
   BadgeCheck,
   Beef,
   CakeSlice,
   ChevronDown,
   Coffee,
+  BookmarkPlus,
+  CheckCircle2,
   Flame,
   Heart,
   LogOut,
+  LocateFixed,
   MapPin,
   Menu,
   Pizza,
@@ -25,6 +29,13 @@ import { ModeToggle } from '@/shared/components/ModeToggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,17 +44,10 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from '@/shared/components/ui/popover'
 import { toast } from 'sonner'
 import { getAvailableDishes, type SearchDish } from '../api'
 import { useStorefront } from '../context'
-import { useDeliveryArea } from '../state'
+import { useDeliveryArea, useDeliveryLocation, type DeliveryLocation } from '../state'
 
 const CATEGORY_ICONS = [
   { match: 'local', icon: Soup },
@@ -71,12 +75,17 @@ export function CustomerHeader() {
   const { areas, settings, vendors } = useStorefront()
   const areaId = useDeliveryArea((state) => state.areaId)
   const setAreaId = useDeliveryArea((state) => state.setAreaId)
+  const deliveryLocation = useDeliveryLocation()
   const { items } = useCart()
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const navigate = useNavigate()
   const location = useLocation()
   const searchRef = useRef<HTMLInputElement>(null)
-  const [areaOpen, setAreaOpen] = useState(false)
+  const [addressOpen, setAddressOpen] = useState(false)
+  const [addressQuery, setAddressQuery] = useState('')
+  const [locationError, setLocationError] = useState('')
+  const [locating, setLocating] = useState(false)
+  const [savedAddresses, setSavedAddresses] = useState<DeliveryLocation[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
@@ -84,6 +93,10 @@ export function CustomerHeader() {
   const [dishError, setDishError] = useState<Error | null>(null)
 
   const selectedArea = areas.find((area) => area.id === areaId)
+  const matchingAreas = areas.filter((area) => area.name.toLocaleLowerCase().includes(addressQuery.trim().toLocaleLowerCase()))
+  const matchingVendors = addressQuery.trim()
+    ? vendors.filter((vendor) => `${vendor.name} ${vendor.address}`.toLocaleLowerCase().includes(addressQuery.trim().toLocaleLowerCase())).slice(0, 4)
+    : []
   const cuisines = useMemo(
     () =>
       [...new Set(vendors.map((vendor) => vendor.cuisine?.trim()).filter((item): item is string => Boolean(item)))].sort((a, b) => a.localeCompare(b)),
@@ -135,9 +148,33 @@ export function CustomerHeader() {
   useEffect(() => {
     if (!areaId && areas.length && !localStorage.getItem('chopza-area-picker-shown')) {
       localStorage.setItem('chopza-area-picker-shown', 'true')
-      setAreaOpen(true)
+      setAddressOpen(true)
     }
   }, [areaId, areas.length])
+
+  useEffect(() => {
+    if (!user) {
+      setSavedAddresses([])
+      return
+    }
+    try {
+      const value = localStorage.getItem(`chopza-saved-addresses-${user.id}`)
+      const parsed: unknown = value ? JSON.parse(value) : []
+      setSavedAddresses(Array.isArray(parsed)
+        ? parsed.flatMap((item): DeliveryLocation[] => {
+            if (typeof item === 'string') return [{ address: item, latitude: null, longitude: null }]
+            if (!item || typeof item !== 'object' || !('address' in item) || typeof item.address !== 'string') return []
+            return [{
+              address: item.address,
+              latitude: 'latitude' in item && typeof item.latitude === 'number' ? item.latitude : null,
+              longitude: 'longitude' in item && typeof item.longitude === 'number' ? item.longitude : null,
+            }]
+          })
+        : [])
+    } catch {
+      setSavedAddresses([])
+    }
+  }, [user?.id])
 
   useEffect(() => {
     const focusSearch = () => {
@@ -161,6 +198,58 @@ export function CustomerHeader() {
     if (query.trim()) params.set('q', query.trim())
     navigate(`/explore${params.size ? `?${params.toString()}` : ''}`)
     setSearchOpen(false)
+  }
+
+  function chooseArea(areaIdValue: string | null, address: string) {
+    setAreaId(areaIdValue)
+    deliveryLocation.setLocation({ address, latitude: null, longitude: null })
+    setAddressOpen(false)
+    setLocationError('')
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError('Location is unavailable in this browser. Enter your address instead.')
+      return
+    }
+    setLocating(true)
+    setLocationError('')
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const address = `Current location (${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)})`
+        setAreaId(null)
+        deliveryLocation.setLocation({ address, latitude: coords.latitude, longitude: coords.longitude })
+        setAddressQuery('')
+        setLocating(false)
+        setAddressOpen(false)
+      },
+      () => {
+        setLocationError('We could not access your location. Allow location access or enter an address manually.')
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
+  }
+
+  function saveAddress() {
+    if (!deliveryLocation.address) {
+      setAddressOpen(true)
+      setLocationError('Choose or enter a delivery address first.')
+      return
+    }
+    if (!user) {
+      navigate('/login', { state: { message: 'Sign in to save this delivery address.', role: 'customer' } })
+      setAddressOpen(false)
+      return
+    }
+    const nextAddresses = [deliveryLocation, ...savedAddresses.filter((saved) => saved.address !== deliveryLocation.address)]
+    try {
+      localStorage.setItem(`chopza-saved-addresses-${user.id}`, JSON.stringify(nextAddresses))
+      setSavedAddresses(nextAddresses)
+      toast.success('Delivery address saved on this device.')
+    } catch {
+      toast.error('Unable to save this address on this device.')
+    }
   }
 
   const searchControl = (
@@ -242,36 +331,85 @@ export function CustomerHeader() {
             <span className="max-w-24 truncate text-sm font-bold sm:max-w-32">{appName}</span>
           </Link>
 
-          <Popover open={areaOpen} onOpenChange={setAreaOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className="h-10 min-w-0 justify-start gap-2 rounded-full px-2 sm:min-w-40 sm:px-3">
-                <MapPin className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                <span className="min-w-0 text-left leading-tight">
-                  <span className="hidden text-[9px] font-bold tracking-[0.12em] text-muted-foreground sm:block">DELIVERY TO</span>
-                  <span className="block max-w-24 truncate text-xs font-semibold sm:max-w-32 sm:text-sm">{selectedArea?.name ?? 'All of Kano'}</span>
-                </span>
-                <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 rounded-2xl p-2">
-              <PopoverHeader className="px-2 py-1">
-                <PopoverTitle>Choose your delivery area</PopoverTitle>
-              </PopoverHeader>
-              <button onClick={() => { setAreaId(null); setAreaOpen(false) }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-accent">
-                <MapPin className="size-4 text-primary" />
-                <span className="flex-1 text-sm">All of Kano</span>
-                {!areaId && <span className="text-xs font-medium text-primary">Selected</span>}
-              </button>
-              {areas.map((area) => (
-                <button key={area.id} onClick={() => { setAreaId(area.id); setAreaOpen(false) }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-accent">
-                  <MapPin className="size-4 text-muted-foreground" />
-                  <span className="flex-1 text-sm">{area.name}</span>
-                  {areaId === area.id && <span className="text-xs font-medium text-primary">Selected</span>}
+          <Dialog open={addressOpen} onOpenChange={(open) => {
+            setAddressOpen(open)
+            if (open) {
+              setAddressQuery(deliveryLocation.address)
+              setLocationError('')
+            }
+          }}>
+            <Button variant="ghost" onClick={() => {
+              setAddressQuery(deliveryLocation.address)
+              setLocationError('')
+              setAddressOpen(true)
+            }} className="h-10 min-w-0 justify-start gap-2 rounded-full px-2 sm:min-w-40 sm:px-3">
+              <MapPin className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="min-w-0 text-left leading-tight">
+                <span className="hidden text-[9px] font-bold tracking-[0.12em] text-muted-foreground sm:block">DELIVERY TO</span>
+                <span className="block max-w-24 truncate text-xs font-semibold sm:max-w-40 sm:text-sm">{deliveryLocation.address || selectedArea?.name || 'Choose address'}</span>
+              </span>
+              <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+            </Button>
+            <DialogContent className="top-auto bottom-0 left-0 max-h-[90dvh] w-full max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-t-3xl p-0 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+              <DialogHeader className="border-b px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
+                <DialogTitle className="text-2xl font-bold tracking-tight">Delivery address</DialogTitle>
+                <DialogDescription>Choose where you want your order delivered.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 overflow-y-auto px-5 py-5 sm:px-7">
+                <form onSubmit={(event) => {
+                  event.preventDefault()
+                  const address = addressQuery.trim()
+                  if (address.length < 5) {
+                    setLocationError('Enter a more complete delivery address.')
+                    return
+                  }
+                  chooseArea(null, address)
+                }} className="relative">
+                  <Search aria-hidden="true" className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
+                  <Input
+                    value={addressQuery}
+                    onChange={(event) => setAddressQuery(event.target.value)}
+                    placeholder="Enter a new address"
+                    aria-label="Enter a delivery address"
+                    className="h-14 rounded-2xl border-0 bg-muted/70 pl-12 pr-4 text-sm focus-visible:ring-emerald-600"
+                  />
+                </form>
+
+                <button type="button" onClick={useCurrentLocation} disabled={locating} className="flex w-full items-start gap-3 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-emerald-50 disabled:opacity-60 dark:hover:bg-emerald-950/30">
+                  <LocateFixed className="mt-0.5 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-emerald-700">{locating ? 'Finding your location…' : 'Use your current location'}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryLocation.latitude !== null && deliveryLocation.longitude !== null ? `${deliveryLocation.latitude.toFixed(4)}, ${deliveryLocation.longitude.toFixed(4)}` : 'Allow location access to sort restaurants near you.'}</span>
+                  </span>
                 </button>
-              ))}
-              {!areas.length && <p className="px-3 py-2 text-xs text-muted-foreground">No active service areas are available.</p>}
-            </PopoverContent>
-          </Popover>
+                {locationError && <p role="alert" className="rounded-xl bg-destructive/5 px-3 py-2 text-sm text-destructive">{locationError}</p>}
+
+                {savedAddresses.length > 0 && (
+                  <section className="space-y-1 border-t pt-3">
+                    <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Saved addresses</p>
+                    {savedAddresses.map((address) => <button key={address.address} type="button" onClick={() => {
+                      setAreaId(null)
+                      deliveryLocation.setLocation(address)
+                      setAddressOpen(false)
+                    }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-accent"><MapPin className="size-4 shrink-0 text-muted-foreground" /><span className="truncate">{address.address}</span></button>)}
+                  </section>
+                )}
+
+                {(matchingVendors.length > 0 || matchingAreas.length > 0) && (
+                  <section className="max-h-48 space-y-1 overflow-y-auto border-t pt-3">
+                    <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggested addresses and areas</p>
+                    {matchingVendors.map((vendor) => <button key={vendor.id} type="button" onClick={() => chooseArea(vendor.service_area_id, vendor.address)} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-accent"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span className="min-w-0"><span className="block truncate text-sm font-medium">{vendor.address}</span><span className="block truncate text-xs text-muted-foreground">{vendor.name}</span></span></button>)}
+                    {matchingAreas.map((area) => <button key={area.id} type="button" onClick={() => chooseArea(area.id, `${area.name}, Kano, Nigeria`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-accent"><MapPin className="size-4 shrink-0 text-muted-foreground" /><span className="flex-1 text-sm">{area.name}, Kano</span>{area.id === areaId && <CheckCircle2 className="size-4 text-emerald-700" />}</button>)}
+                  </section>
+                )}
+
+                <div className="flex items-center justify-between gap-3 border-t pt-4">
+                  <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground"><BookmarkPlus className="size-4" />Save new address</span>
+                  {user ? <Button type="button" variant="secondary" className="rounded-full text-emerald-800" onClick={saveAddress}>Save address <ArrowRight className="size-4" /></Button> : <Button type="button" variant="secondary" className="rounded-full text-emerald-800" onClick={saveAddress}>Log in to save <ArrowRight className="size-4" /></Button>}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <div className="hidden min-w-52 flex-1 sm:block">{searchControl}</div>
 

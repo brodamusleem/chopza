@@ -32,6 +32,8 @@ export async function getVendorApplication(userId: string) {
       'id, owner_id, name, description, address, service_area_id, latitude, longitude, logo_url, status, is_open, created_at',
     )
     .eq('owner_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
   throwOnError(error)
   return data as VendorApplication | null

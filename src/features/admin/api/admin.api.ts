@@ -4,6 +4,10 @@ import type {
   DashboardStats,
   OrderFilters,
   OrdersPerDay,
+  DashboardAnalytics,
+  DashboardOrderStatus,
+  DashboardTopVendor,
+  DashboardRevenuePoint,
   VendorFilters,
   AdminRider,
   RiderFilters,
@@ -232,7 +236,7 @@ export async function getVendorDetail(
   const { data, error } = (await requireSupabase()
     .from('vendors')
     .select(
-      'id, owner_id, name, description, address, service_area_id, logo_url, latitude, longitude, status, created_at, profiles(full_name, phone), service_areas(name)',
+      'id, owner_id, name, description, address, service_area_id, logo_url, latitude, longitude, status, created_at, owner:profiles!vendors_owner_id_fkey(full_name, phone), service_areas(name)',
     )
     .eq('id', vendorId)
     .maybeSingle()) as unknown as {
@@ -247,7 +251,7 @@ export async function getVendorDetail(
       longitude: number | null
       status: AdminVendor['status']
       created_at: string
-      profiles: { full_name: string | null; phone: string | null } | null
+      owner: { full_name: string | null; phone: string | null } | null
       service_areas: { name: string } | null
     } | null
     error: { message: string } | null
@@ -266,9 +270,9 @@ export async function getVendorDetail(
     longitude: data.longitude,
     status: data.status,
     createdAt: data.created_at,
-    ownerName: data.profiles?.full_name ?? null,
+    ownerName: data.owner?.full_name ?? null,
     ownerEmail: null,
-    ownerPhone: data.profiles?.phone ?? null,
+    ownerPhone: data.owner?.phone ?? null,
   }
 }
 
@@ -290,6 +294,66 @@ export async function getAllVendors(
     status: vendor.status,
     createdAt: vendor.created_at,
   }))
+}
+
+export type AdminVendorOwner = {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+}
+
+export async function getAvailableVendorOwners(): Promise<AdminVendorOwner[]> {
+  const supabase = requireSupabase()
+  const [profiles, vendors] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, phone')
+      .eq('role', 'vendor')
+      .order('full_name'),
+    supabase.from('vendors').select('owner_id'),
+  ])
+  throwOnError(profiles.error)
+  throwOnError(vendors.error)
+  const existingOwners = new Set((vendors.data ?? []).map((vendor) => vendor.owner_id))
+  return (profiles.data ?? [])
+    .filter((profile) => !existingOwners.has(profile.id))
+    .map((profile) => ({
+      id: profile.id,
+      name: profile.full_name,
+      email: profile.email,
+      phone: profile.phone,
+    }))
+}
+
+export async function getAdminServiceAreas(): Promise<
+  { id: string; name: string }[]
+> {
+  const { data, error } = await requireSupabase()
+    .from('service_areas')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('name')
+  throwOnError(error)
+  return data ?? []
+}
+
+export async function addVendorFromAdmin(input: {
+  ownerId: string
+  name: string
+  description: string
+  address: string
+  serviceAreaId: string
+}): Promise<void> {
+  const { error } = await requireSupabase().from('vendors').insert({
+    owner_id: input.ownerId,
+    name: input.name.trim(),
+    description: input.description.trim() || null,
+    address: input.address.trim(),
+    service_area_id: input.serviceAreaId,
+    status: 'approved',
+  })
+  throwOnError(error)
 }
 
 export async function getRecentOrders(
@@ -328,6 +392,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     pendingRiders,
     ordersToday,
     inTransit,
+    totalOrders,
+    pendingOrders,
+    revenue,
   ] = await Promise.all([
     requireSupabase()
       .from('vendors')
@@ -352,6 +419,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .from('orders')
       .select('id', { count: 'exact', head: true })
       .in('status', ['rider_assigned', 'picked_up', 'in_transit']),
+    requireSupabase()
+      .from('orders')
+      .select('id', { count: 'exact', head: true }),
+    requireSupabase()
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending'),
+    getAllTimePaidRevenue(),
   ])
   ;[
     vendors,
@@ -360,6 +435,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     pendingRiders,
     ordersToday,
     inTransit,
+    totalOrders,
+    pendingOrders,
   ].forEach(({ error }) => throwOnError(error))
   return {
     totalVendors: vendors.count ?? 0,
@@ -368,7 +445,146 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     pendingRiders: pendingRiders.count ?? 0,
     ordersToday: ordersToday.count ?? 0,
     inTransit: inTransit.count ?? 0,
+    totalOrders: totalOrders.count ?? 0,
+    pendingOrders: pendingOrders.count ?? 0,
+    totalRevenue: revenue,
   }
+}
+
+async function getAllTimePaidRevenue(): Promise<number> {
+  const supabase = requireSupabase()
+  let offset = 0
+  let total = 0
+  const pageSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('status', 'paid')
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(offset, offset + pageSize - 1)
+    throwOnError(error)
+    const page = data ?? []
+    total += page.reduce((sum, payment) => sum + Number(payment.amount), 0)
+    if (page.length < pageSize) return total
+    offset += pageSize
+  }
+}
+
+function currentWeekKeys(now = new Date()): string[] {
+  const today = dayKey(now)
+  const date = new Date(`${today}T12:00:00Z`)
+  const mondayOffset = (date.getUTCDay() + 6) % 7
+  const monday = new Date(date.getTime() - mondayOffset * 86400000)
+  return Array.from({ length: 7 }, (_, index) =>
+    new Date(monday.getTime() + index * 86400000).toISOString().slice(0, 10),
+  )
+}
+
+export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
+  const supabase = requireSupabase()
+  const keys = currentWeekKeys()
+  const start = startOfLagosDay(keys[0])
+  const end = startOfLagosDay(nextDay(keys[6]))
+  const dayLabels = new Map(
+    keys.map((date) => [
+      date,
+      new Intl.DateTimeFormat('en-GB', {
+        weekday: 'short',
+        timeZone: 'Africa/Lagos',
+      }).format(new Date(`${date}T12:00:00Z`)),
+    ]),
+  )
+  const revenueByDate = new Map(keys.map((date) => [date, 0]))
+  let revenueOffset = 0
+  const pageSize = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('amount, paid_at')
+      .eq('status', 'paid')
+      .not('paid_at', 'is', null)
+      .gte('paid_at', start)
+      .lt('paid_at', end)
+      .order('paid_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(revenueOffset, revenueOffset + pageSize - 1)
+    throwOnError(error)
+    const page = data ?? []
+    for (const payment of page) {
+      if (!payment.paid_at) continue
+      const key = dayKey(new Date(payment.paid_at))
+      if (revenueByDate.has(key))
+        revenueByDate.set(
+          key,
+          (revenueByDate.get(key) ?? 0) + Number(payment.amount),
+        )
+    }
+    if (page.length < pageSize) break
+    revenueOffset += pageSize
+  }
+
+  let orderOffset = 0
+  const statusCounts = new Map<string, number>()
+  const vendorPerformance = new Map<
+    string,
+    { id: string; name: string; orders: number; revenue: number }
+  >()
+  let ordersThisWeek = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('status, payment_status, vendor_id, subtotal, vendor:vendors(name)')
+      .gte('created_at', start)
+      .lt('created_at', end)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(orderOffset, orderOffset + pageSize - 1)
+    throwOnError(error)
+    const page = data ?? []
+    for (const order of page) {
+      ordersThisWeek += 1
+      statusCounts.set(order.status, (statusCounts.get(order.status) ?? 0) + 1)
+      if (order.payment_status !== 'paid') continue
+      const current = vendorPerformance.get(order.vendor_id) ?? {
+        id: order.vendor_id,
+        name: order.vendor?.name ?? 'Unknown vendor',
+        orders: 0,
+        revenue: 0,
+      }
+      current.orders += 1
+      current.revenue += Number(order.subtotal)
+      vendorPerformance.set(order.vendor_id, current)
+    }
+    if (page.length < pageSize) break
+    orderOffset += pageSize
+  }
+
+  const statuses: { status: string; color: string }[] = [
+    { status: 'pending', color: '#94a3b8' },
+    { status: 'accepted', color: '#0ea5e9' },
+    { status: 'preparing', color: '#f59e0b' },
+    { status: 'ready_for_pickup', color: '#a855f7' },
+    { status: 'rider_assigned', color: '#6366f1' },
+    { status: 'picked_up', color: '#f97316' },
+    { status: 'in_transit', color: '#fb923c' },
+    { status: 'delivered', color: '#176844' },
+    { status: 'cancelled', color: '#ef4444' },
+  ]
+  const orderStatuses: DashboardOrderStatus[] = statuses.map(({ status }) => ({
+    status,
+    count: statusCounts.get(status) ?? 0,
+  }))
+  const revenuePoints: DashboardRevenuePoint[] = keys.map((date) => ({
+    date,
+    label: dayLabels.get(date) ?? date,
+    revenue: revenueByDate.get(date) ?? 0,
+  }))
+  const topVendors: DashboardTopVendor[] = [...vendorPerformance.values()]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5)
+  return { revenueByDay: revenuePoints, ordersThisWeek, orderStatuses, topVendors }
 }
 
 export async function getOrdersPerDay(): Promise<OrdersPerDay> {

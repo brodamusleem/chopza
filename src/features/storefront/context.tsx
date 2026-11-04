@@ -15,7 +15,7 @@ import {
   type StorefrontSettings,
   type StorefrontVendor,
 } from './api'
-import { useDeliveryArea } from './state'
+import { useDeliveryArea, useDeliveryLocation } from './state'
 
 type StorefrontContextValue = {
   areas: ActiveServiceArea[]
@@ -30,6 +30,8 @@ const StorefrontContext = createContext<StorefrontContextValue | null>(null)
 
 export function StorefrontProvider({ children }: { children: ReactNode }) {
   const areaId = useDeliveryArea((state) => state.areaId)
+  const latitude = useDeliveryLocation((state) => state.latitude)
+  const longitude = useDeliveryLocation((state) => state.longitude)
   const [areas, setAreas] = useState<ActiveServiceArea[]>([])
   const [settings, setSettings] = useState<StorefrontSettings | null>(null)
   const [vendors, setVendors] = useState<StorefrontVendor[]>([])
@@ -69,8 +71,30 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
     let active = true
     setIsLoading(true)
     setError(null)
-    getApprovedStorefrontVendors(areaId)
-      .then((loaded) => active && setVendors(loaded))
+    getApprovedStorefrontVendors(latitude !== null && longitude !== null ? null : areaId)
+      .then((loaded) => {
+        if (!active) return
+        if (latitude === null || longitude === null) {
+          setVendors(loaded)
+          return
+        }
+        const distanceFromCustomer = (vendorLatitude: number, vendorLongitude: number) => {
+          const radians = (degrees: number) => (degrees * Math.PI) / 180
+          const dLat = radians(vendorLatitude - latitude)
+          const dLon = radians(vendorLongitude - longitude)
+          const a = Math.sin(dLat / 2) ** 2
+            + Math.cos(radians(latitude)) * Math.cos(radians(vendorLatitude)) * Math.sin(dLon / 2) ** 2
+          return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        }
+        const nearby = loaded.map((vendor) => ({
+          ...vendor,
+          distanceKm: vendor.latitude !== null && vendor.longitude !== null
+            ? distanceFromCustomer(vendor.latitude, vendor.longitude)
+            : null,
+        }))
+        nearby.sort((a, b) => (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY))
+        setVendors(nearby)
+      })
       .catch((cause: unknown) => {
         if (active)
           setError(
@@ -83,7 +107,7 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false
     }
-  }, [areaId, retryCount])
+  }, [areaId, latitude, longitude, retryCount])
 
   const retry = useCallback(() => setRetryCount((value) => value + 1), [])
   const value = useMemo(

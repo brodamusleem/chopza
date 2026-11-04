@@ -89,8 +89,11 @@ export function RestaurantCard({
               <span className="shrink-0">Delivery {formatNaira(Math.round(deliveryFee * 100))}</span>
             )}
           </div>
-          {vendor.areaName && (
-            <p className="truncate text-xs text-muted-foreground">{vendor.areaName}</p>
+          {(vendor.areaName || vendor.distanceKm !== undefined && vendor.distanceKm !== null) && (
+            <p className="truncate text-xs text-muted-foreground">
+              {vendor.areaName ?? 'Nearby'}
+              {vendor.distanceKm !== undefined && vendor.distanceKm !== null && ` · ${vendor.distanceKm.toFixed(1)} km away`}
+            </p>
           )}
         </div>
       </Link>

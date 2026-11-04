@@ -10,10 +10,12 @@ export type StorefrontVendor = Pick<
   | 'cover_url'
   | 'cuisine'
   | 'address'
+  | 'latitude'
+  | 'longitude'
   | 'service_area_id'
   | 'created_at'
   | 'is_open'
-> & { areaName: string | null }
+> & { areaName: string | null; distanceKm?: number | null }
 
 export type ActiveServiceArea = Pick<Tables<'service_areas'>, 'id' | 'name'>
 export type StorefrontSettings = Pick<
@@ -57,7 +59,7 @@ export async function getApprovedStorefrontVendors(
   let query = client
     .from('vendors')
     .select(
-      'id, name, description, logo_url, cover_url, cuisine, address, service_area_id, created_at, is_open',
+      'id, name, description, logo_url, cover_url, cuisine, address, latitude, longitude, service_area_id, created_at, is_open',
     )
     .eq('status', 'approved')
     .order('name')
@@ -87,7 +89,7 @@ export async function getVendorById(vendorId: string) {
   const { data, error } = await requireSupabase()
     .from('vendors')
     .select(
-      'id, name, description, logo_url, cover_url, cuisine, address, service_area_id, created_at, is_open',
+      'id, name, description, logo_url, cover_url, cuisine, address, latitude, longitude, service_area_id, created_at, is_open',
     )
     .eq('id', vendorId)
     .eq('status', 'approved')
