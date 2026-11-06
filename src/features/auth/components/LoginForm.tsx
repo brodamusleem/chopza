@@ -8,6 +8,7 @@ import { AuthNotice } from './AuthNotice'
 import { loginSchema, type LoginValues } from '../schemas/login.schema'
 import { getProfileRole, login } from '../api/auth.api'
 import { useAuthStore } from '../store/authStore'
+import { postLoginDestination } from '../roleRedirect'
 export function LoginForm() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -23,46 +24,23 @@ export function LoginForm() {
   async function submit(values: LoginValues) {
     try {
       const { session } = await login(values)
-      useAuthStore.getState().setSession(session)
       const profileRole = session?.user
         ? await getProfileRole(session.user.id)
         : null
-      useAuthStore.getState().setProfileRole(profileRole)
+      if (!session || !profileRole) {
+        setError('root', {
+          message: 'We could not find a role for this account. Please contact support.',
+        })
+        return
+      }
+      useAuthStore.getState().setAuthenticatedSession(session, profileRole)
       const state: unknown = location.state
-      const stateRole =
-        state && typeof state === 'object' && 'role' in state
-          ? state.role
-          : null
-      const intendedRole =
-        stateRole ?? sessionStorage.getItem('chopza-pending-signup-role')
       const from =
         state && typeof state === 'object' && 'from' in state
           ? state.from
           : null
-      if (intendedRole === 'vendor' && profileRole !== 'vendor') {
-        setError('root', {
-          message:
-            'This account is not configured as a vendor yet. Apply the latest Supabase migrations, then use a new vendor signup or update this account profile role.',
-        })
-        return
-      }
-      if (intendedRole === profileRole) {
-        sessionStorage.removeItem('chopza-pending-signup-role')
-      }
-      navigate(
-        typeof from === 'string' &&
-          from.startsWith('/') &&
-          !from.startsWith('//')
-          ? from
-          : profileRole === 'admin'
-            ? '/admin/dashboard'
-            : profileRole === 'vendor'
-              ? '/vendor/dashboard'
-              : profileRole === 'rider'
-                ? '/rider/dashboard'
-                : '/',
-        { replace: true },
-      )
+      sessionStorage.removeItem('chopza-pending-signup-role')
+      navigate(postLoginDestination(profileRole, from), { replace: true })
     } catch (error) {
       setError('root', {
         message: error instanceof Error ? error.message : 'Unable to sign in.',

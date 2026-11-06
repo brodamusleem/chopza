@@ -1,5 +1,7 @@
-import { useLocation } from 'react-router'
+import { Navigate, useLocation } from 'react-router'
 import type { Role } from '@/shared/constants/roles'
+import { useAuthStore } from '../store/authStore'
+import { roleHome } from '../roleRedirect'
 import { AuthNotice } from '../components/AuthNotice'
 import { AuthPageShell } from '../components/AuthPageShell'
 import { LoginForm } from '../components/LoginForm'
@@ -8,7 +10,11 @@ type LoginLocationState = { message?: string; role?: Role } | null
 
 export function Component() {
   const location = useLocation()
+  const { ready, session, role } = useAuthStore()
   const state = location.state as LoginLocationState
+
+  if (!ready) return <p className="py-16 text-center text-sm text-muted-foreground">Checking your account…</p>
+  if (session && role) return <Navigate to={roleHome(role)} replace />
 
   return (
     <AuthPageShell
