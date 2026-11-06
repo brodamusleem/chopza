@@ -12,13 +12,16 @@ export function useSession() {
     }
     let active = true
     let eventReceived = false
+    let syncVersion = 0
     async function syncSession(session: Parameters<typeof setSession>[0]) {
+      const version = ++syncVersion
       setSession(session)
       if (!session) return
       try {
-        setProfileRole(await getProfileRole(session.user.id))
+        const role = await getProfileRole(session.user.id)
+        if (active && version === syncVersion) setProfileRole(role)
       } catch (error: unknown) {
-        if (active)
+        if (active && version === syncVersion)
           setError(
             error instanceof Error
               ? error.message

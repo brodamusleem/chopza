@@ -35,6 +35,5 @@ export const useAuthStore = create<
       error: null,
     }),
   setProfileRole: (role) => set({ role: isRole(role) ? role : null }),
-  setError: (error) =>
-    set({ user: null, session: null, role: null, ready: true, error }),
+  setError: (error) => set({ ready: true, error }),
 }))

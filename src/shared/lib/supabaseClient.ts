@@ -3,9 +3,10 @@ import type { Database } from '@/shared/types/database.types'
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()
-// Missing configuration is a supported setup state, never a fake session.
+// Supabase accepts both newer `sb_publishable_...` keys and legacy anon JWT
+// keys. Validate that both values exist, not a particular key generation.
 export const supabase =
-  url && key?.startsWith('sb_publishable_')
+  url && key
     ? createClient<Database>(url, key)
     : null
 
