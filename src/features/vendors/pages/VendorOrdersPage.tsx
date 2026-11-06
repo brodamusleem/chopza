@@ -49,6 +49,8 @@ import {
 } from '@/shared/components/ui/alert-dialog'
 import { formatNaira } from '@/shared/lib/currency'
 import { toast } from 'sonner'
+import { VendorRiderTeam } from '../components/VendorRiderTeam'
+import { requireSupabase } from '@/shared/lib/supabaseClient'
 
 const next: Partial<
   Record<VendorOrderStatus, { label: string; status: VendorOrderStatus }>
@@ -65,12 +67,14 @@ export function Component() {
   const [active, setActive] = useState<VendorOrder[]>([])
   const [history, setHistory] = useState<VendorOrder[]>([])
   const [busy, setBusy] = useState<string>()
+  const [vendorId, setVendorId] = useState<string>()
   const [historyStatus, setHistoryStatus] = useState<HistoryStatus>('all')
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('all')
   const load = async () => {
     if (!user) return
     const vendorId = await getVendorId(user.id)
     if (!vendorId) return
+    setVendorId(vendorId)
     const [nextActive, nextHistory] = await Promise.all([
       getVendorOrders(vendorId, false),
       getVendorOrders(vendorId, true),
@@ -81,6 +85,24 @@ export function Component() {
   useEffect(() => {
     void load()
   }, [user])
+  useEffect(() => {
+    if (!vendorId) return
+    const channel = requireSupabase()
+      .channel(`vendor-new-orders-${vendorId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `vendor_id=eq.${vendorId}` },
+        (payload) => {
+          const row = payload.new as { status?: string; payment_status?: string }
+          if (row.status === 'pending' && row.payment_status === 'paid') {
+            toast.success('A new paid order has arrived.')
+            void load()
+          }
+        },
+      )
+      .subscribe()
+    return () => { void requireSupabase().removeChannel(channel) }
+  }, [vendorId, user])
   const change = async (order: VendorOrder, status: VendorOrderStatus) => {
     setBusy(order.id)
     try {
@@ -184,6 +206,7 @@ export function Component() {
         <h1 className="text-3xl font-semibold">Orders</h1>
         <p className="text-muted-foreground">Process orders as they arrive.</p>
       </div>
+      <VendorRiderTeam />
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">Active</TabsTrigger>

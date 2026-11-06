@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { AlertCircle, ArrowRight, PlayCircle, RefreshCw } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, ArrowRight, PlayCircle, RefreshCw, Store } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -12,11 +12,23 @@ import { DispatchMap } from '@/features/dispatch-tracking/components/DispatchMap
 import { DispatchSimulator } from '@/features/dispatch-tracking/components/DispatchSimulator'
 import { useActiveDispatchOrders } from '@/features/dispatch-tracking/hooks/useActiveDispatchOrders'
 import { useLiveOrderPosition } from '@/features/dispatch-tracking/hooks/useLiveOrderPosition'
+import { requireSupabase } from '@/shared/lib/supabaseClient'
+import { toast } from 'sonner'
+import {
+  getApprovedVendorChoices,
+  getUnacceptedPaidOrders,
+  reassignOrderToVendor,
+  type AdminUnacceptedOrder,
+} from '../api/admin.api'
 
 export function AdminDispatchPage() {
   const { orders, isLoading, error, refetch } = useActiveDispatchOrders()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [simulating, setSimulating] = useState(false)
+  const [unacceptedOrders, setUnacceptedOrders] = useState<AdminUnacceptedOrder[]>([])
+  const [vendorChoices, setVendorChoices] = useState<{ id: string; name: string }[]>([])
+  const [transferChoices, setTransferChoices] = useState<Record<string, string>>({})
+  const [transferring, setTransferring] = useState<string>()
   const [livePositions, setLivePositions] = useState<
     Record<string, { lat: number; lng: number; timestamp: number }>
   >({})
@@ -26,6 +38,52 @@ export function AdminDispatchPage() {
     activeOrder?.id,
     activeOrder?.rider_id ?? undefined,
   )
+
+  const loadUnaccepted = useCallback(async () => {
+    try {
+      const [ordersToReview, vendors] = await Promise.all([
+        getUnacceptedPaidOrders(), getApprovedVendorChoices(),
+      ])
+      setUnacceptedOrders(ordersToReview)
+      setVendorChoices(vendors)
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Unable to load orders needing review.')
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadUnaccepted()
+    const client = requireSupabase()
+    const channel = client.channel('admin-dispatch-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'app_notifications',
+      }, (payload) => {
+        const note = payload.new as { recipient_id?: string; title?: string; body?: string }
+        if (note.recipient_id && note.title) toast.warning(note.title, { description: note.body })
+        void loadUnaccepted()
+      })
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'orders',
+      }, () => void loadUnaccepted())
+      .subscribe()
+    return () => { void client.removeChannel(channel) }
+  }, [loadUnaccepted])
+
+  const transferOrder = async (order: AdminUnacceptedOrder) => {
+    const targetVendorId = transferChoices[order.id]
+    if (!targetVendorId) return
+    setTransferring(order.id)
+    try {
+      await reassignOrderToVendor(order.id, targetVendorId)
+      toast.success('Order transferred. The new restaurant has been notified in the app.')
+      await loadUnaccepted()
+      await refetch()
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Unable to transfer this order.')
+    } finally {
+      setTransferring(undefined)
+    }
+  }
 
   useEffect(() => {
     if (!selectedId && orders.length > 0) {
@@ -81,6 +139,39 @@ export function AdminDispatchPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Store className="size-5 text-destructive" />Orders needing restaurant review</CardTitle>
+          <p className="text-sm text-muted-foreground">These paid orders were not accepted by the restaurant within five minutes. Choose another approved restaurant to transfer an order. Confirm it can prepare the existing items first; the order items and price stay the same.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {unacceptedOrders.map((order) => {
+            const alternatives = vendorChoices.filter((vendor) => vendor.id !== order.vendorId)
+            return <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <p className="font-medium">Order #{order.id.slice(0, 8)} · {order.customerName}</p>
+                <p className="text-sm text-muted-foreground">Current restaurant: {order.vendorName} · {new Date(order.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  aria-label={`Choose restaurant for order ${order.id.slice(0, 8)}`}
+                  className="h-10 min-w-56 rounded-md border bg-background px-3 text-sm"
+                  value={transferChoices[order.id] ?? ''}
+                  onChange={(event) => setTransferChoices((previous) => ({ ...previous, [order.id]: event.target.value }))}
+                >
+                  <option value="">Choose a restaurant</option>
+                  {alternatives.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+                </select>
+                <Button disabled={!transferChoices[order.id] || transferring === order.id} onClick={() => void transferOrder(order)}>
+                  {transferring === order.id ? 'Transferring…' : 'Transfer order'}
+                </Button>
+              </div>
+            </div>
+          })}
+          {!unacceptedOrders.length && <p className="py-3 text-sm text-muted-foreground">No paid orders are waiting for restaurant review.</p>}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.8fr_0.9fr]">
         <DispatchMap

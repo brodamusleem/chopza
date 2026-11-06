@@ -383,6 +383,50 @@ export async function getRecentOrders(
   }))
 }
 
+export type AdminUnacceptedOrder = {
+  id: string
+  vendorId: string
+  vendorName: string
+  customerName: string
+  createdAt: string
+}
+
+export async function getUnacceptedPaidOrders(): Promise<AdminUnacceptedOrder[]> {
+  const { data, error } = await requireSupabase()
+    .from('orders')
+    .select('id, vendor_id, created_at, customer:profiles!orders_customer_id_fkey(full_name), vendor:vendors(name)')
+    .in('status', ['pending', 'cancelled'])
+    .eq('payment_status', 'paid')
+    .not('vendor_response_alerted_at', 'is', null)
+    .order('created_at', { ascending: true })
+  throwOnError(error)
+  return (data ?? []).map((order) => ({
+    id: order.id,
+    vendorId: order.vendor_id,
+    vendorName: order.vendor?.name ?? 'Restaurant',
+    customerName: order.customer?.full_name ?? 'Customer',
+    createdAt: order.created_at,
+  }))
+}
+
+export async function reassignOrderToVendor(orderId: string, vendorId: string) {
+  const { error } = await requireSupabase().rpc('admin_reassign_order' as never, {
+    target_order_id: orderId,
+    target_vendor_id: vendorId,
+  } as never)
+  throwOnError(error)
+}
+
+export async function getApprovedVendorChoices(): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await requireSupabase()
+    .from('vendors')
+    .select('id, name')
+    .eq('status', 'approved')
+    .order('name')
+  throwOnError(error)
+  return data ?? []
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   const today = dayKey(new Date())
   const [

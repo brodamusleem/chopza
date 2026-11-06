@@ -16,6 +16,8 @@ export type RiderOrder = {
   created_at: string
   delivery_address: string
   total_amount: number
+  rider_assigned_at: string | null
+  rider_accepted_at: string | null
   vendor_name: string
   vendor_address: string
   items: { name: string; quantity: number }[]
@@ -75,6 +77,18 @@ export async function claimDelivery(orderId: string) {
   const { error } = await requireSupabase().rpc('claim_delivery', {
     target_order_id: orderId,
   })
+  check(error)
+}
+export async function acceptDelivery(orderId: string) {
+  const { error } = await requireSupabase().rpc('accept_delivery' as never, {
+    target_order_id: orderId,
+  } as never)
+  check(error)
+}
+export async function declineDelivery(orderId: string) {
+  const { error } = await requireSupabase().rpc('decline_delivery' as never, {
+    target_order_id: orderId,
+  } as never)
   check(error)
 }
 export async function addRiderStatusEvent(
@@ -153,6 +167,8 @@ function mapOrder(order: {
   created_at: string
   delivery_address: string
   total_amount: number
+  rider_assigned_at: string | null
+  rider_accepted_at: string | null
   vendor: { name: string; address: string } | null
   order_items: { quantity: number; menu_item: { name: string } | null }[] | null
 }): RiderOrder {
@@ -162,6 +178,8 @@ function mapOrder(order: {
     created_at: order.created_at,
     delivery_address: order.delivery_address,
     total_amount: Number(order.total_amount),
+    rider_assigned_at: order.rider_assigned_at,
+    rider_accepted_at: order.rider_accepted_at,
     vendor_name: order.vendor?.name ?? 'Vendor',
     vendor_address: order.vendor?.address ?? 'Pickup address unavailable',
     items: (order.order_items ?? []).map((item) => ({
@@ -171,7 +189,7 @@ function mapOrder(order: {
   }
 }
 const orderSelect =
-  'id, status, created_at, delivery_address, total_amount, vendor:vendors(name, address), order_items(quantity, menu_item:menu_items(name))'
+  'id, status, created_at, delivery_address, total_amount, rider_assigned_at, rider_accepted_at, vendor:vendors(name, address), order_items(quantity, menu_item:menu_items(name))'
 export async function getAvailableJobs() {
   const { data, error } = await requireSupabase()
     .from('orders')

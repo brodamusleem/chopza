@@ -162,6 +162,84 @@ export type Database = {
           },
         ]
       }
+      app_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json
+          id: string
+          notification_type: string
+          order_id: string | null
+          read_at: string | null
+          recipient_id: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json
+          id?: string
+          notification_type: string
+          order_id?: string | null
+          read_at?: string | null
+          recipient_id: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          notification_type?: string
+          order_id?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      delivery_notification_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          locked_at: string | null
+          last_error: string | null
+          notification_type: string
+          payload: Json
+          recipient_email: string
+          recipient_id: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          last_error?: string | null
+          notification_type: string
+          payload?: Json
+          recipient_email: string
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          last_error?: string | null
+          notification_type?: string
+          payload?: Json
+          recipient_email?: string
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cart_group_id: string
@@ -177,6 +255,11 @@ export type Database = {
           location_updated_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           rider_id: string | null
+          rider_assigned_at: string | null
+          rider_accepted_at: string | null
+          rider_search_alerted_at: string | null
+          vendor_response_alerted_at: string | null
+          vendor_response_started_at: string | null
           service_fee: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
@@ -198,6 +281,11 @@ export type Database = {
           location_updated_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           rider_id?: string | null
+          rider_assigned_at?: string | null
+          rider_accepted_at?: string | null
+          rider_search_alerted_at?: string | null
+          vendor_response_alerted_at?: string | null
+          vendor_response_started_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -219,6 +307,11 @@ export type Database = {
           location_updated_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           rider_id?: string | null
+          rider_assigned_at?: string | null
+          rider_accepted_at?: string | null
+          rider_search_alerted_at?: string | null
+          vendor_response_alerted_at?: string | null
+          vendor_response_started_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -507,7 +600,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_delivery: { Args: { target_order_id: string }; Returns: undefined }
       claim_delivery: { Args: { target_order_id: string }; Returns: undefined }
+      claim_delivery_notifications: {
+        Args: { batch_size?: number }
+        Returns: Database['public']['Tables']['delivery_notification_outbox']['Row'][]
+      }
+      decline_delivery: { Args: { target_order_id: string }; Returns: undefined }
+      dispatch_unassigned_ready_orders: { Args: never; Returns: number }
       create_checkout: {
         Args: {
           p_delivery_address: string
@@ -521,12 +621,29 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      admin_reassign_order: { Args: { target_order_id: string; target_vendor_id: string }; Returns: undefined }
+      get_vendor_rider_options: {
+        Args: { target_vendor_id: string }
+        Returns: {
+          rider_id: string
+          rider_owner_id: string
+          full_name: string
+          is_online: boolean
+          assigned_to_vendor: boolean
+        }[]
+      }
+      process_expired_rider_assignments: { Args: never; Returns: number }
+      process_dispatch_timeouts: { Args: never; Returns: number }
       resubmit_rider_application: {
         Args: { target_rider_id: string }
         Returns: undefined
       }
       resubmit_vendor_application: {
         Args: { target_vendor_id: string }
+        Returns: undefined
+      }
+      set_vendor_riders: {
+        Args: { target_vendor_id: string; target_rider_ids: string[] }
         Returns: undefined
       }
     }

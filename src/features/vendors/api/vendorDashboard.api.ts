@@ -27,6 +27,30 @@ export type VendorMenuItem = {
   category: string | null
   available: boolean
 }
+export type VendorRiderOption = {
+  rider_id: string
+  rider_owner_id: string
+  full_name: string
+  is_online: boolean
+  assigned_to_vendor: boolean
+}
+
+export async function getVendorRiderOptions(vendorId: string) {
+  const { data, error } = await requireSupabase().rpc(
+    'get_vendor_rider_options' as never,
+    { target_vendor_id: vendorId } as never,
+  )
+  errorMessage(error)
+  return (data ?? []) as unknown as VendorRiderOption[]
+}
+
+export async function saveVendorRiderPool(vendorId: string, riderIds: string[]) {
+  const { error } = await requireSupabase().rpc('set_vendor_riders' as never, {
+    target_vendor_id: vendorId,
+    target_rider_ids: riderIds,
+  } as never)
+  errorMessage(error)
+}
 
 function errorMessage(error: { message: string } | null) {
   if (error) throw new Error(error.message)
