@@ -4,7 +4,10 @@ import type { LoginValues } from '../schemas/login.schema'
 import type { RegisterValues } from '../schemas/register.schema'
 export async function login(values: LoginValues) {
   const { data, error } =
-    await requireSupabase().auth.signInWithPassword(values)
+    await requireSupabase().auth.signInWithPassword({
+      email: values.email.trim(),
+      password: values.password,
+    })
   if (error) throw error
   return data
 }
