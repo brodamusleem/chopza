@@ -5,7 +5,7 @@ export function roleHome(role: Role) {
     case 'admin': return '/admin/dashboard'
     case 'vendor': return '/vendor/dashboard'
     case 'rider': return '/rider/dashboard'
-    default: return '/'
+    case 'customer': return '/explore'
   }
 }
 
