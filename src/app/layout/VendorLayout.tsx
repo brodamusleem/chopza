@@ -232,7 +232,7 @@ function VendorShell() {
             <SidebarTrigger />
             <span className="ml-2 font-semibold">Vendor portal</span>
           </header>
-          <div className="w-full px-5 py-8">
+          <div className="mx-auto w-full px-6 py-6 sm:px-8 sm:py-8">
             <Outlet />
           </div>
         </main>
@@ -250,11 +250,11 @@ export function VendorLayout() {
 }
 function VendorApplicationGate({ path }: { path: string }) {
   const { application, status, isLoading, error } = useVendorApplicationStatus()
-  if (isLoading) return <p role="status">Loading your application...</p>
-  if (error) return <p role="alert">{error.message}</p>
+  if (isLoading) return <p className="px-6 py-6 sm:px-8" role="status">Loading your application...</p>
+  if (error) return <p className="px-6 py-6 sm:px-8" role="alert">{error.message}</p>
   if (!application)
     return path === '/vendor/onboarding' ? (
-      <Outlet />
+      <div className="px-4 py-6 sm:px-6 sm:py-8"><Outlet /></div>
     ) : (
       <Navigate to="/vendor/onboarding" replace />
     )
@@ -266,5 +266,9 @@ function VendorApplicationGate({ path }: { path: string }) {
     return <Navigate to="/vendor/application-rejected" replace />
   if (status === 'suspended' && path !== '/vendor/application-status')
     return <Navigate to="/vendor/application-status" replace />
-  return status === 'approved' ? <VendorShell /> : <Outlet />
+  return status === 'approved' ? (
+    <VendorShell />
+  ) : (
+    <div className="px-4 py-6 sm:px-6 sm:py-8"><Outlet /></div>
+  )
 }

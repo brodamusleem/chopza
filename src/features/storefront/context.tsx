@@ -26,6 +26,8 @@ type StorefrontContextValue = {
   retry: () => void
 }
 
+const NEARBY_DELIVERY_RADIUS_KM = 5
+
 const StorefrontContext = createContext<StorefrontContextValue | null>(null)
 
 export function StorefrontProvider({ children }: { children: ReactNode }) {
@@ -91,7 +93,7 @@ export function StorefrontProvider({ children }: { children: ReactNode }) {
           distanceKm: vendor.latitude !== null && vendor.longitude !== null
             ? distanceFromCustomer(vendor.latitude, vendor.longitude)
             : null,
-        }))
+        })).filter((vendor) => vendor.distanceKm !== null && vendor.distanceKm <= NEARBY_DELIVERY_RADIUS_KM)
         nearby.sort((a, b) => (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY))
         setVendors(nearby)
       })

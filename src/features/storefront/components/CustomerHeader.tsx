@@ -44,10 +44,17 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/components/ui/sheet'
 import { toast } from 'sonner'
 import { getAvailableDishes, type SearchDish } from '../api'
 import { useStorefront } from '../context'
 import { useDeliveryArea, useDeliveryLocation, type DeliveryLocation } from '../state'
+import { CustomerLocationMap } from './CustomerLocationMap'
 
 const CATEGORY_ICONS = [
   { match: 'local', icon: Soup },
@@ -84,9 +91,11 @@ export function CustomerHeader() {
   const [addressOpen, setAddressOpen] = useState(false)
   const [addressQuery, setAddressQuery] = useState('')
   const [locationError, setLocationError] = useState('')
+  const [deliveryPin, setDeliveryPin] = useState<[number, number] | null>(null)
   const [locating, setLocating] = useState(false)
   const [savedAddresses, setSavedAddresses] = useState<DeliveryLocation[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
   const [dishes, setDishes] = useState<SearchDish[]>([])
@@ -203,6 +212,7 @@ export function CustomerHeader() {
   function chooseArea(areaIdValue: string | null, address: string) {
     setAreaId(areaIdValue)
     deliveryLocation.setLocation({ address, latitude: null, longitude: null })
+    setDeliveryPin(null)
     setAddressOpen(false)
     setLocationError('')
   }
@@ -218,6 +228,7 @@ export function CustomerHeader() {
       ({ coords }) => {
         const address = `Current location (${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)})`
         setAreaId(null)
+        setDeliveryPin([coords.latitude, coords.longitude])
         deliveryLocation.setLocation({ address, latitude: coords.latitude, longitude: coords.longitude })
         setAddressQuery('')
         setLocating(false)
@@ -335,6 +346,11 @@ export function CustomerHeader() {
             setAddressOpen(open)
             if (open) {
               setAddressQuery(deliveryLocation.address)
+              setDeliveryPin(
+                deliveryLocation.latitude !== null && deliveryLocation.longitude !== null
+                  ? [deliveryLocation.latitude, deliveryLocation.longitude]
+                  : null,
+              )
               setLocationError('')
             }
           }}>
@@ -363,12 +379,24 @@ export function CustomerHeader() {
                     setLocationError('Enter a more complete delivery address.')
                     return
                   }
-                  chooseArea(null, address)
+                  if (!deliveryPin) {
+                    setLocationError('Drop a pin on the map to find restaurants near this address.')
+                    return
+                  }
+                  setAreaId(null)
+                  deliveryLocation.setLocation({ address, latitude: deliveryPin[0], longitude: deliveryPin[1] })
+                  setAddressOpen(false)
+                  setLocationError('')
                 }} className="relative">
                   <Search aria-hidden="true" className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-emerald-700" />
                   <Input
                     value={addressQuery}
-                    onChange={(event) => setAddressQuery(event.target.value)}
+                    onChange={(event) => {
+                      setAddressQuery(event.target.value)
+                      if (event.target.value.trim() !== deliveryLocation.address)
+                        setDeliveryPin(null)
+                      setLocationError('')
+                    }}
                     placeholder="Enter a new address"
                     aria-label="Enter a delivery address"
                     className="h-14 rounded-2xl border-0 bg-muted/70 pl-12 pr-4 text-sm focus-visible:ring-emerald-600"
@@ -379,17 +407,41 @@ export function CustomerHeader() {
                   <LocateFixed className="mt-0.5 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-emerald-700">{locating ? 'Finding your location…' : 'Use your current location'}</span>
-                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryLocation.latitude !== null && deliveryLocation.longitude !== null ? `${deliveryLocation.latitude.toFixed(4)}, ${deliveryLocation.longitude.toFixed(4)}` : 'Allow location access to sort restaurants near you.'}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryLocation.latitude !== null && deliveryLocation.longitude !== null ? `${deliveryLocation.latitude.toFixed(4)}, ${deliveryLocation.longitude.toFixed(4)}` : 'Use GPS or pin the map to find restaurants near you.'}</span>
                   </span>
                 </button>
                 {locationError && <p role="alert" className="rounded-xl bg-destructive/5 px-3 py-2 text-sm text-destructive">{locationError}</p>}
+
+                <section className="space-y-2 border-t pt-4">
+                  <div>
+                    <p className="text-sm font-semibold">Pin your delivery location</p>
+                    <p className="text-xs text-muted-foreground">Tap the map where you are. Nearby restaurants are selected from this pin.</p>
+                  </div>
+                  <CustomerLocationMap
+                    pin={deliveryPin}
+                    onPin={(pin) => {
+                      setDeliveryPin(pin)
+                      if (!addressQuery.trim())
+                        setAddressQuery(`Pinned location (${pin[0].toFixed(5)}, ${pin[1].toFixed(5)})`)
+                      setAreaId(null)
+                      setLocationError('')
+                    }}
+                  />
+                </section>
 
                 {savedAddresses.length > 0 && (
                   <section className="space-y-1 border-t pt-3">
                     <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Saved addresses</p>
                     {savedAddresses.map((address) => <button key={address.address} type="button" onClick={() => {
+                      if (address.latitude === null || address.longitude === null) {
+                        setAddressQuery(address.address)
+                        setDeliveryPin(null)
+                        setLocationError('Pin this saved address on the map to find restaurants nearby.')
+                        return
+                      }
                       setAreaId(null)
                       deliveryLocation.setLocation(address)
+                      setDeliveryPin([address.latitude, address.longitude])
                       setAddressOpen(false)
                     }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-accent"><MapPin className="size-4 shrink-0 text-muted-foreground" /><span className="truncate">{address.address}</span></button>)}
                   </section>
@@ -414,6 +466,16 @@ export function CustomerHeader() {
           <div className="hidden min-w-52 flex-1 sm:block">{searchControl}</div>
 
           <div className="flex items-center justify-end gap-1 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="rounded-full sm:hidden"
+              aria-label="Open navigation menu"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu aria-hidden="true" />
+            </Button>
             <Button asChild variant="ghost" size="icon" className="hidden rounded-full sm:inline-flex" aria-label="Favourites">
               <Link to="/favorites"><Heart aria-hidden="true" /></Link>
             </Button>
@@ -423,7 +485,7 @@ export function CustomerHeader() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-10 gap-2 rounded-full px-1.5 sm:px-2" aria-label="Open account menu">
+                <Button variant="ghost" className="hidden h-10 gap-2 rounded-full px-1.5 sm:flex sm:px-2" aria-label="Open account menu">
                   <Avatar className="size-8">
                     <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="bg-secondary text-xs">{initials}</AvatarFallback>
@@ -450,6 +512,49 @@ export function CustomerHeader() {
             </DropdownMenu>
           </div>
         </div>
+
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-[min(20rem,85vw)] max-w-sm gap-0 p-0 sm:hidden">
+            <SheetHeader className="border-b px-5 py-5">
+              <SheetTitle className="text-left text-lg font-bold">{appName}</SheetTitle>
+              <p className="text-sm text-muted-foreground">Find restaurants and manage your orders.</p>
+            </SheetHeader>
+            <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-3">
+              {[
+                { label: 'Explore restaurants', to: '/explore', icon: Store },
+                { label: 'Favourites', to: '/favorites', icon: Heart },
+                { label: 'My orders', to: '/orders', icon: ShoppingBag },
+                { label: 'Account settings', to: '/account', icon: Menu },
+                { label: 'Cart', to: '/cart', icon: ShoppingCart },
+              ].map(({ label, to, icon: Icon }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium hover:bg-accent"
+                >
+                  <Icon className="size-5 text-primary" aria-hidden="true" />{label}
+                </Link>
+              ))}
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    void logout().catch((cause: unknown) => toast.error(cause instanceof Error ? cause.message : 'Unable to sign out.'))
+                  }}
+                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-accent"
+                >
+                  <LogOut className="size-5 text-primary" aria-hidden="true" />Sign out
+                </button>
+              ) : (
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium hover:bg-accent">
+                  Sign in
+                </Link>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
 
         <div className="relative mt-2 sm:hidden">{searchControl}</div>
 

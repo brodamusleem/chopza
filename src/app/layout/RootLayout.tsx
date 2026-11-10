@@ -1,11 +1,23 @@
+import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
-import { UtensilsCrossed } from 'lucide-react'
+import { Menu, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '@/shared/lib/supabaseClient'
+import { Button } from '@/shared/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/components/ui/sheet'
 export function RootLayout() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = useLocation().pathname
   const isAdmin = pathname.startsWith('/admin')
   const isRoleArea =
-    pathname.startsWith('/vendor') || pathname.startsWith('/rider')
+    pathname === '/vendor' ||
+    pathname.startsWith('/vendor/') ||
+    pathname === '/rider' ||
+    pathname.startsWith('/rider/')
   const isAuthPage = pathname === '/login' || pathname.startsWith('/register')
   const isCustomerArea =
     pathname.startsWith('/explore') ||
@@ -22,7 +34,7 @@ export function RootLayout() {
       </a>
       {showShellHeader && (
         <header className="sticky top-0 z-50 border-b border-foreground/8 bg-background/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-col items-stretch gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-5 sm:py-4">
             <Link
               to="/"
               className="flex w-fit items-center gap-2 text-xl font-black tracking-[-0.06em] text-foreground sm:text-2xl"
@@ -32,7 +44,7 @@ export function RootLayout() {
             </Link>
             <nav
               aria-label="Main navigation"
-              className="-mx-1 flex max-w-full items-center justify-start gap-1 overflow-x-auto pb-1 text-xs font-semibold whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:justify-end sm:gap-2 sm:overflow-visible sm:pb-0 sm:text-sm"
+              className="hidden items-center justify-end gap-2 text-sm font-semibold whitespace-nowrap sm:flex"
             >
               <Link
                 to="/company"
@@ -65,6 +77,42 @@ export function RootLayout() {
                 Order food
               </Link>
             </nav>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="sm:hidden"
+              aria-label="Open main navigation"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <Menu aria-hidden="true" />
+            </Button>
+            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+              <SheetContent side="right" className="w-[min(20rem,85vw)] gap-0 p-0 sm:hidden">
+                <SheetHeader className="border-b px-5 py-5">
+                  <SheetTitle className="text-left">Main navigation</SheetTitle>
+                </SheetHeader>
+                <nav aria-label="Main navigation" className="flex flex-col gap-1 p-4">
+                  {[
+                    { label: 'Company', to: '/company' },
+                    { label: 'Vendors', to: '/vendors' },
+                    { label: 'Riders', to: '/riders' },
+                    { label: 'Log in', to: '/login' },
+                    { label: 'Order food', to: '/explore' },
+                  ].map(({ label, to }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setMobileNavOpen(false)}
+                      className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground ${to === '/explore' ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : 'text-foreground'}`}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
       )}

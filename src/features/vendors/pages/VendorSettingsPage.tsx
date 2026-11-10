@@ -9,7 +9,9 @@ import {
 import { Switch } from '@/shared/components/ui/switch'
 import { toast } from 'sonner'
 import { updateVendorOpenStatus } from '../api/vendorOnboarding.api'
+import { useNavigate } from 'react-router'
 export function Component() {
+  const navigate = useNavigate()
   const { application, refetch } = useVendorApplicationStatus()
   const updateOpenStatus = async (isOpen: boolean) => {
     if (!application) return
@@ -61,8 +63,9 @@ export function Component() {
             <VendorApplicationForm
               existingVendor={application}
               onComplete={() => {
-                refetch()
-                toast.success('Business details saved.')
+                void refetch()
+                toast.success('Changes submitted for admin review.')
+                navigate('/vendor/pending-review', { replace: true })
               }}
             />
           )}

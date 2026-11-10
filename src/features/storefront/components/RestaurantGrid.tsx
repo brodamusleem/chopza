@@ -18,7 +18,7 @@ export function RestaurantGrid({
 }) {
   if (isLoading)
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-14 sm:grid-cols-2 sm:gap-y-8 xl:grid-cols-3">
         {Array.from({ length: 6 }, (_, index) => (
           <Card key={index} className="overflow-hidden rounded-2xl p-0">
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
@@ -38,7 +38,7 @@ export function RestaurantGrid({
       </div>
     )
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-x-6 gap-y-14 sm:grid-cols-2 sm:gap-y-8 xl:grid-cols-3">
       {vendors.map((vendor) => (
         <RestaurantCard key={vendor.id} vendor={vendor} deliveryFee={deliveryFee} />
       ))}

@@ -42,6 +42,7 @@ export function VendorApplicationForm({
   const [areas, setAreas] = useState<{ id: string; name: string }[]>([])
   const [areasError, setAreasError] = useState('')
   const [logo, setLogo] = useState<File>()
+  const [logoPreview, setLogoPreview] = useState<string | null>(existingVendor?.logo_url ?? null)
   const { submit, isSubmitting } = useSubmitVendorApplication()
   const { submit: resubmit, isSubmitting: isResubmitting } =
     useResubmitVendorApplication()
@@ -67,6 +68,15 @@ export function VendorApplicationForm({
         longitude: existingVendor.longitude,
       })
   }, [existingVendor, form])
+  useEffect(() => {
+    if (!logo) {
+      setLogoPreview(existingVendor?.logo_url ?? null)
+      return
+    }
+    const preview = URL.createObjectURL(logo)
+    setLogoPreview(preview)
+    return () => URL.revokeObjectURL(preview)
+  }, [logo, existingVendor?.logo_url])
   useEffect(() => {
     getServiceAreas()
       .then(setAreas)
@@ -172,6 +182,13 @@ export function VendorApplicationForm({
         />
         <div className="space-y-2">
           <Label htmlFor="vendor-logo">Logo</Label>
+          {logoPreview && (
+            <img
+              src={logoPreview}
+              alt="Business logo preview"
+              className="size-20 rounded-xl border object-cover"
+            />
+          )}
           <Input
             id="vendor-logo"
             type="file"
@@ -202,6 +219,11 @@ export function VendorApplicationForm({
             />
           )}
         />
+        {form.formState.errors.latitude && (
+          <p role="alert" className="text-sm text-destructive">
+            {form.formState.errors.latitude.message}
+          </p>
+        )}
         {form.formState.errors.root && (
           <p className="text-sm text-destructive">
             {form.formState.errors.root.message}
@@ -211,7 +233,7 @@ export function VendorApplicationForm({
           {pending
             ? 'Saving application…'
             : existingVendor
-              ? 'Resubmit application'
+              ? 'Save changes and resubmit for review'
               : 'Submit application'}
         </Button>
       </form>

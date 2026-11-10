@@ -10,6 +10,14 @@ export const vendorApplicationSchema = z.object({
   service_area_id: z.string().min(1, 'Choose a service area.'),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
+}).superRefine((values, context) => {
+  if (values.latitude === null || values.longitude === null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['latitude'],
+      message: 'Pin your restaurant location so nearby customers can find you.',
+    })
+  }
 })
 
 export type VendorApplicationValues = z.infer<typeof vendorApplicationSchema>

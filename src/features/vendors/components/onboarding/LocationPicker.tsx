@@ -61,7 +61,7 @@ export function LocationPicker({
         <div>
           <p className="font-medium">Pin your location</p>
           <p className="text-sm text-muted-foreground">
-            Optional, but it helps riders find you.
+            Required so nearby customers can find your restaurant.
           </p>
         </div>
         <button
@@ -90,6 +90,7 @@ export function LocationPicker({
       {locationError && (
         <p className="text-sm text-destructive">{locationError}</p>
       )}
+
       {latitude !== null && longitude !== null && (
         <p className="text-xs text-muted-foreground">
           Pinned at {latitude.toFixed(5)}, {longitude.toFixed(5)}

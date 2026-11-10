@@ -116,7 +116,7 @@ function Shell() {
             <SidebarTrigger />
             <span className="ml-3 font-semibold">Rider workspace</span>
           </header>
-          <div className="w-full px-5 py-8">
+          <div className="mx-auto w-full px-6 py-6 sm:px-8 sm:py-8">
             <Outlet />
           </div>
         </main>
@@ -128,20 +128,20 @@ function Gate() {
   const location = useLocation()
   const { application, status, isLoading, error, refetch } =
     useRiderApplicationStatus()
-  if (isLoading) return <p>Loading rider account…</p>
-  if (error) return <p role="alert">{error.message}</p>
+  if (isLoading) return <p className="px-6 py-6 sm:px-8">Loading rider account…</p>
+  if (error) return <p className="px-6 py-6 sm:px-8" role="alert">{error.message}</p>
   if (!application)
     return location.pathname === '/rider/onboarding' ? (
-      <RiderOnboarding done={refetch} />
+      <div className="px-4 py-6 sm:px-6 sm:py-8"><RiderOnboarding done={refetch} /></div>
     ) : (
       <Navigate to="/rider/onboarding" replace />
     )
   if (status === 'rejected')
-    return <RiderOnboarding application={application} done={refetch} />
+    return <div className="px-4 py-6 sm:px-6 sm:py-8"><RiderOnboarding application={application} done={refetch} /></div>
   if (status === 'pending')
-    return <p>Your rider application is under review.</p>
+    return <p className="px-6 py-6 sm:px-8">Your rider application is under review.</p>
   if (status === 'suspended')
-    return <p>Your rider account is suspended. Contact support.</p>
+    return <p className="px-6 py-6 sm:px-8">Your rider account is suspended. Contact support.</p>
   return <Shell />
 }
 export function RiderLayout() {

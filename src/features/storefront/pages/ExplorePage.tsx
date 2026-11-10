@@ -4,13 +4,12 @@ import { RotateCw } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { getAvailableDishes } from '../api'
 import { useStorefront } from '../context'
-import { useFavoriteState } from '../state'
-import { RestaurantCarousel } from '../components/RestaurantCarousel'
+import { useDeliveryLocation } from '../state'
 import { RestaurantGrid } from '../components/RestaurantGrid'
 
 export function Component() {
   const { vendors, settings, isLoading, error, retry } = useStorefront()
-  const favoriteIds = useFavoriteState((state) => state.vendorIds)
+  const deliveryLocation = useDeliveryLocation()
   const [searchParams] = useSearchParams()
   const query = searchParams.get('q')?.trim() ?? ''
   const cuisine = searchParams.get('cuisine')
@@ -36,16 +35,10 @@ export function Component() {
     }
   }, [query, vendors])
 
-  const allSorted = useMemo(
-    () => [...vendors].sort((a, b) => Number(b.is_open) - Number(a.is_open) || a.name.localeCompare(b.name)),
-    [vendors],
-  )
-  const recent = useMemo(() => {
-    const cutoff = Date.now() - 30 * 86400000
-    return allSorted.filter((vendor) => new Date(vendor.created_at).getTime() >= cutoff)
-  }, [allSorted])
-  const open = allSorted.filter((vendor) => vendor.is_open)
-  const favorites = allSorted.filter((vendor) => favoriteIds.includes(vendor.id))
+  const allSorted = useMemo(() => {
+    if (vendors.some((vendor) => vendor.distanceKm !== undefined)) return vendors
+    return [...vendors].sort((a, b) => Number(b.is_open) - Number(a.is_open) || a.name.localeCompare(b.name))
+  }, [vendors])
   const isFiltered = Boolean(query || cuisine)
   const matches = isFiltered
     ? allSorted.filter((vendor) => {
@@ -69,15 +62,7 @@ export function Component() {
     )
 
   return (
-    <div className="space-y-10 pb-8 pt-6 sm:space-y-12 sm:pt-9">
-      <section className="rounded-3xl bg-primary/8 px-5 py-6 sm:px-8 sm:py-8">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Find your next meal</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Good food, close by.</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">Browse approved restaurants and their menus around Kano.</p>
-        </div>
-      </section>
-
+    <div className="space-y-7 pb-8 pt-5 sm:space-y-9 sm:pt-8">
       {isFiltered ? (
         <section className="space-y-4">
           <div>
@@ -95,33 +80,25 @@ export function Component() {
           />
         </section>
       ) : (
-        <>
-          {favorites.length > 0 && (
-            <RestaurantCarousel title="Your favourites" vendors={favorites} deliveryFee={deliveryFee} emptyMessage="You haven’t saved any restaurants yet." />
-          )}
-          <RestaurantCarousel
-            title="Open now"
-            vendors={open}
+        <section className="space-y-5">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">All Restaurants</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {deliveryLocation.latitude !== null && deliveryLocation.longitude !== null
+                ? 'Restaurants nearby, sorted by distance.'
+                : deliveryLocation.address
+                  ? `Restaurants around ${deliveryLocation.address}.`
+                  : 'Restaurants available in your area.'}
+            </p>
+          </div>
+          <RestaurantGrid
+            vendors={allSorted}
             deliveryFee={deliveryFee}
-            emptyMessage="No restaurants are open in this area yet."
+            isLoading={isLoading}
+            emptyTitle="No restaurants in this area yet"
+            emptyMessage="Choose another delivery area or check back later."
           />
-          {recent.length > 0 && (
-            <RestaurantCarousel title="New on Chopza" vendors={recent} deliveryFee={deliveryFee} emptyMessage="No new restaurants in this area yet." />
-          )}
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold sm:text-2xl">All restaurants</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Open restaurants first, then listed alphabetically.</p>
-            </div>
-            <RestaurantGrid
-              vendors={allSorted}
-              deliveryFee={deliveryFee}
-              isLoading={isLoading}
-              emptyTitle="No restaurants in this area yet"
-              emptyMessage="Choose another delivery area or check back later."
-            />
-          </section>
-        </>
+        </section>
       )}
     </div>
   )
