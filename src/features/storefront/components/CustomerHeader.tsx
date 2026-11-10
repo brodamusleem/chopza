@@ -22,6 +22,7 @@ import {
   Soup,
   Store,
   UtensilsCrossed,
+  UserRound,
 } from 'lucide-react'
 import { logout, useAuth } from '@/features/auth'
 import { useCart } from '@/features/ordering/hooks/useCart'
@@ -574,14 +575,11 @@ export function CustomerHeader() {
         </nav>
       </div>
 
-      <nav aria-label="Customer navigation" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-background/95 px-2 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:hidden">
-        <BottomNavLink to="/explore" label="Explore" icon={Store} active={location.pathname === '/explore'} />
-        <button onClick={() => { navigate('/explore'); window.dispatchEvent(new Event('customer-search-focus')) }} className="flex flex-col items-center gap-1 py-1 text-xs text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary">
-          <Search className="size-5" aria-hidden="true" /><span>Search</span>
-        </button>
-        <BottomNavLink to="/favorites" label="Favourites" icon={Heart} active={location.pathname === '/favorites'} />
-        <BottomNavLink to="/orders" label="Orders" icon={ShoppingBag} active={location.pathname.startsWith('/orders')} />
-        <BottomNavLink to="/account" label="Account" icon={Menu} active={location.pathname === '/account'} />
+      <nav aria-label="Customer navigation" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-border/70 bg-background px-2 pt-1.5 pb-[max(.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] sm:hidden">
+        <BottomNavLink to="/explore" label="Home" icon={Store} active={location.pathname.startsWith('/explore')} />
+        <BottomNavLink to="/favorites" label="Favorites" icon={Heart} active={location.pathname.startsWith('/favorites')} />
+        <BottomNavLink to="/cart" label="Cart" icon={ShoppingCart} active={location.pathname.startsWith('/cart')} badge={cartCount} />
+        <BottomNavLink to="/account" label="Profile" icon={UserRound} active={location.pathname.startsWith('/account')} />
       </nav>
     </header>
   )
@@ -610,15 +608,25 @@ function BottomNavLink({
   label,
   icon: Icon,
   active,
+  badge,
 }: {
   to: string
   label: string
   icon: typeof Store
   active: boolean
+  badge?: number
 }) {
   return (
-    <Link to={to} aria-current={active ? 'page' : undefined} className={`flex flex-col items-center gap-1 py-1 text-xs ${active ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-      <Icon className="size-5" aria-hidden="true" />{label}
+    <Link to={to} aria-current={active ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 py-1 text-[10px] transition-colors focus-visible:outline-2 focus-visible:outline-primary ${active ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+      <span className="relative">
+        <Icon className="size-5" aria-hidden="true" />
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </span>
+      {label}
     </Link>
   )
 }
