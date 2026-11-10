@@ -58,7 +58,10 @@ export function Component() {
       const name = item.category?.trim() || 'Other'
       groups.set(name, [...(groups.get(name) ?? []), item])
     }
-    return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right))
+    return [...groups.entries()].sort(([left], [right]) => {
+      const drinksLast = Number(isDrinkCategory(left)) - Number(isDrinkCategory(right))
+      return drinksLast || left.localeCompare(right)
+    })
   }, [menu])
   const categoryNames = sections.map(([name]) => name)
   const cart = useCart()
@@ -223,6 +226,10 @@ function CartSummary({ vendor, items, subtotal, otherVendorCount, isClosed }: { 
 
 function categoryId(name: string) {
   return `menu-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+}
+
+function isDrinkCategory(category: string) {
+  return /drink|beverage|smoothie|juice|water|soda/i.test(category)
 }
 
 function scrollToCategory(name: string) {

@@ -42,8 +42,11 @@ export function LoginForm() {
       sessionStorage.removeItem('chopza-pending-signup-role')
       navigate(postLoginDestination(profileRole, from), { replace: true })
     } catch (error) {
+      const message = error instanceof Error ? error.message : ''
       setError('root', {
-        message: error instanceof Error ? error.message : 'Unable to sign in.',
+        message: /invalid login credentials|invalid credentials/i.test(message)
+          ? 'Supabase could not complete this email/password sign-in. This message does not identify the cause. Check that the account belongs to this project and is set up for email/password sign-in. Admin access also requires the account to have the admin role.'
+          : message || 'Unable to sign in.',
       })
     }
   }
