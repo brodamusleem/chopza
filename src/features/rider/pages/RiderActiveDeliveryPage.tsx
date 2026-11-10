@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Bike, MapPin, Phone, StickyNote } from 'lucide-react'
 import { useAuth } from '@/features/auth'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -65,8 +66,10 @@ export function Component() {
         <CardTitle>{order.vendor_name}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p>Pick up: {order.vendor_address}</p>
-        <p>Drop-off: {order.delivery_address}</p>
+        <p className="flex items-start gap-2"><Bike className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="font-medium">Pickup</span><br />{order.vendor_address}</span></p>
+        <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="font-medium">Delivery address</span><br />{order.delivery_address}</span></p>
+        <p className="flex items-start gap-2"><Phone className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="font-medium">Customer phone</span><br />{order.delivery_phone ? <a className="underline underline-offset-2" href={`tel:${order.delivery_phone}`}>{order.delivery_phone}</a> : 'Not provided'}</span></p>
+        {order.delivery_notes && <p className="flex items-start gap-2"><StickyNote className="mt-0.5 size-4 shrink-0 text-primary" /><span><span className="font-medium">Delivery note</span><br />{order.delivery_notes}</span></p>}
         <p>
           {order.items
             .map((item) => `${item.quantity}× ${item.name}`)

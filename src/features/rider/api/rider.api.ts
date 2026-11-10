@@ -15,6 +15,8 @@ export type RiderOrder = {
   status: RiderOrderStatus
   created_at: string
   delivery_address: string
+  delivery_phone: string | null
+  delivery_notes: string | null
   total_amount: number
   rider_assigned_at: string | null
   rider_accepted_at: string | null
@@ -166,6 +168,8 @@ function mapOrder(order: {
   status: string
   created_at: string
   delivery_address: string
+  delivery_phone: string | null
+  delivery_notes: string | null
   total_amount: number
   rider_assigned_at: string | null
   rider_accepted_at: string | null
@@ -177,6 +181,8 @@ function mapOrder(order: {
     status: order.status as RiderOrderStatus,
     created_at: order.created_at,
     delivery_address: order.delivery_address,
+    delivery_phone: order.delivery_phone,
+    delivery_notes: order.delivery_notes,
     total_amount: Number(order.total_amount),
     rider_assigned_at: order.rider_assigned_at,
     rider_accepted_at: order.rider_accepted_at,
@@ -189,7 +195,7 @@ function mapOrder(order: {
   }
 }
 const orderSelect =
-  'id, status, created_at, delivery_address, total_amount, rider_assigned_at, rider_accepted_at, vendor:vendors(name, address), order_items(quantity, menu_item:menu_items(name))'
+  'id, status, created_at, delivery_address, delivery_phone, delivery_notes, total_amount, rider_assigned_at, rider_accepted_at, vendor:vendors(name, address), order_items(quantity, menu_item:menu_items(name))'
 export async function getAvailableJobs() {
   const { data, error } = await requireSupabase()
     .from('orders')

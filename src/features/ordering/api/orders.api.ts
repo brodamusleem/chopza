@@ -21,6 +21,7 @@ export async function initializeCheckoutPayment(
     body: {
       address: checkout.address,
       phone: checkout.phone,
+      notes: checkout.notes?.trim() || null,
       latitude: checkout.latitude ?? null,
       longitude: checkout.longitude ?? null,
       items: items.map(({ menuItemId, quantity }) => ({ menuItemId, quantity })),

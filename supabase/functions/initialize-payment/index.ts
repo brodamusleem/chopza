@@ -26,6 +26,7 @@ Deno.serve(async (request) => {
     const body = await request.json()
     const address = typeof body.address === 'string' ? body.address.trim() : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
+    const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 500) : ''
     const latitude = typeof body.latitude === 'number' && Number.isFinite(body.latitude) && body.latitude >= -90 && body.latitude <= 90
       ? body.latitude
       : null
@@ -70,6 +71,15 @@ Deno.serve(async (request) => {
     if (!checkout?.out_cart_group_id || !Number.isSafeInteger(amountKobo) || amountKobo <= 0) {
       throw new Error('The server returned an invalid checkout total.')
     }
+
+    const { data: contactRows, error: contactError } = await adminClient
+      .from('orders')
+      .update({ delivery_phone: phone, delivery_notes: notes || null })
+      .eq('cart_group_id', checkout.out_cart_group_id)
+      .eq('customer_id', authData.user.id)
+      .select('id')
+    if (contactError) throw contactError
+    if (!contactRows?.length) throw new Error('Unable to save the delivery contact details.')
 
     const reference = `chopza_${crypto.randomUUID()}`
 

@@ -7,7 +7,7 @@ export function CustomerLayout() {
     <StorefrontProvider>
       <FavoriteLoader />
       <CustomerHeader />
-      <div className="mx-auto min-h-[60vh] max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto min-h-[60vh] max-w-7xl px-4 pb-20 sm:px-6 sm:pb-0 lg:px-8">
         <Outlet />
       </div>
       <footer className="mx-auto max-w-7xl border-t px-4 py-8 text-sm text-muted-foreground sm:px-6 lg:px-8">

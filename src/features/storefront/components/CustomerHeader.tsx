@@ -335,7 +335,8 @@ export function CustomerHeader() {
   )
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+    <>
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-3 pt-3 sm:px-5">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-[1.4rem] border border-border/70 bg-card/95 p-2 shadow-lg shadow-primary/5 sm:flex sm:gap-3 sm:rounded-full sm:px-4 sm:py-2">
           <Link to="/explore" className="flex min-w-0 items-center gap-2 rounded-full px-1.5 focus-visible:outline-2 focus-visible:outline-primary" aria-label={`${appName} explore`}>
@@ -575,13 +576,14 @@ export function CustomerHeader() {
         </nav>
       </div>
 
+      </header>
       <nav aria-label="Customer navigation" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-border/70 bg-background px-2 pt-1.5 pb-[max(.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] sm:hidden">
         <BottomNavLink to="/explore" label="Home" icon={Store} active={location.pathname.startsWith('/explore')} />
         <BottomNavLink to="/favorites" label="Favorites" icon={Heart} active={location.pathname.startsWith('/favorites')} />
         <BottomNavLink to="/cart" label="Cart" icon={ShoppingCart} active={location.pathname.startsWith('/cart')} badge={cartCount} />
         <BottomNavLink to="/account" label="Profile" icon={UserRound} active={location.pathname.startsWith('/account')} />
       </nav>
-    </header>
+    </>
   )
 }
 
