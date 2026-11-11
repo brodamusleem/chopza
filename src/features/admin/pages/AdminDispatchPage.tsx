@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, ArrowRight, PlayCircle, RefreshCw, Store } from 'lucide-react'
+import { AlertCircle, ArrowRight, Bike, PlayCircle, RefreshCw, Store } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -16,8 +16,12 @@ import { requireSupabase } from '@/shared/lib/supabaseClient'
 import { toast } from 'sonner'
 import {
   getApprovedVendorChoices,
+  getApprovedRidersForManualAssignment,
+  getUnassignedDispatchOrders,
   getUnacceptedPaidOrders,
+  manuallyAssignRider,
   reassignOrderToVendor,
+  type AdminUnassignedDispatchOrder,
   type AdminUnacceptedOrder,
 } from '../api/admin.api'
 
@@ -27,8 +31,12 @@ export function AdminDispatchPage() {
   const [simulating, setSimulating] = useState(false)
   const [unacceptedOrders, setUnacceptedOrders] = useState<AdminUnacceptedOrder[]>([])
   const [vendorChoices, setVendorChoices] = useState<{ id: string; name: string }[]>([])
+  const [unassignedOrders, setUnassignedOrders] = useState<AdminUnassignedDispatchOrder[]>([])
+  const [riderChoices, setRiderChoices] = useState<{ id: string; name: string; phone: string | null; online: boolean }[]>([])
   const [transferChoices, setTransferChoices] = useState<Record<string, string>>({})
   const [transferring, setTransferring] = useState<string>()
+  const [riderAssignments, setRiderAssignments] = useState<Record<string, string>>({})
+  const [assigning, setAssigning] = useState<string>()
   const [livePositions, setLivePositions] = useState<
     Record<string, { lat: number; lng: number; timestamp: number }>
   >({})
@@ -41,11 +49,14 @@ export function AdminDispatchPage() {
 
   const loadUnaccepted = useCallback(async () => {
     try {
-      const [ordersToReview, vendors] = await Promise.all([
+      const [ordersToReview, vendors, waitingOrders, riders] = await Promise.all([
         getUnacceptedPaidOrders(), getApprovedVendorChoices(),
+        getUnassignedDispatchOrders(), getApprovedRidersForManualAssignment(),
       ])
       setUnacceptedOrders(ordersToReview)
       setVendorChoices(vendors)
+      setUnassignedOrders(waitingOrders)
+      setRiderChoices(riders)
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : 'Unable to load orders needing review.')
     }
@@ -170,6 +181,54 @@ export function AdminDispatchPage() {
             </div>
           })}
           {!unacceptedOrders.length && <p className="py-3 text-sm text-muted-foreground">No paid orders are waiting for restaurant review.</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Bike className="size-5 text-primary" />Orders waiting for a rider</CardTitle>
+          <p className="text-sm text-muted-foreground">These paid orders remain in the dispatch queue until a rider is available. Contact an approved rider and confirm they can take the delivery before assigning them here. Offline riders are included.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {unassignedOrders.map((order) => (
+            <div key={order.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <p className="font-medium">Order #{order.id.slice(0, 8)} · {order.customer}</p>
+                <p className="text-sm text-muted-foreground">{order.vendor} · {order.address}</p>
+                <p className="text-xs text-muted-foreground">Waiting since {new Date(order.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  aria-label={`Choose rider for order ${order.id.slice(0, 8)}`}
+                  className="h-10 min-w-56 rounded-md border bg-background px-3 text-sm"
+                  value={riderAssignments[order.id] ?? ''}
+                  onChange={(event) => setRiderAssignments((previous) => ({ ...previous, [order.id]: event.target.value }))}
+                >
+                  <option value="">Choose an approved rider</option>
+                  {riderChoices.map((rider) => <option key={rider.id} value={rider.id}>{rider.name} · {rider.online ? 'Online' : 'Offline'}</option>)}
+                </select>
+                {riderAssignments[order.id] && (() => {
+                  const rider = riderChoices.find((candidate) => candidate.id === riderAssignments[order.id])
+                  return rider ? <p className="self-center text-xs text-muted-foreground">{rider.phone ? <a className="underline underline-offset-2" href={`tel:${rider.phone}`}>Call {rider.name}: {rider.phone}</a> : `No phone number is saved for ${rider.name}.`}</p> : null
+                })()}
+                <Button disabled={!riderAssignments[order.id] || assigning === order.id} onClick={() => {
+                  const riderId = riderAssignments[order.id]
+                  if (!riderId) return
+                  setAssigning(order.id)
+                  void manuallyAssignRider(order.id, riderId)
+                    .then(async () => {
+                      toast.success('Rider assigned. The order is now in their active deliveries.')
+                      await loadUnaccepted()
+                      await refetch()
+                    })
+                    .catch((cause: unknown) => toast.error(cause instanceof Error ? cause.message : 'Unable to assign this rider.'))
+                    .finally(() => setAssigning(undefined))
+                }}>{assigning === order.id ? 'Assigning…' : 'Assign rider'}</Button>
+              </div>
+            </div>
+          ))}
+          {!unassignedOrders.length && <p className="py-3 text-sm text-muted-foreground">No paid orders are waiting for a rider.</p>}
+          {!!unassignedOrders.length && !riderChoices.length && <p className="text-sm text-destructive">There are no approved riders available to assign. Approve a rider application first.</p>}
         </CardContent>
       </Card>
 

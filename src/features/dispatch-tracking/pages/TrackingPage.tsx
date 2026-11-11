@@ -5,8 +5,10 @@ import { z } from 'zod'
 import { useOrderStatusChannel } from '../hooks/useOrderStatusChannel'
 import { useLiveOrderPosition } from '../hooks/useLiveOrderPosition'
 import { Button } from '@/shared/components/ui/button'
-import { initializePayment } from '@/features/ordering/api/orders.api'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/shared/components/ui/alert-dialog'
+import { cancelUnassignedOrder, initializePayment } from '@/features/ordering/api/orders.api'
 import { supabase } from '@/shared/lib/supabaseClient'
+import { toast } from 'sonner'
 
 type Point = { latitude: number; longitude: number }
 
@@ -38,6 +40,8 @@ export function Component() {
   const [origin, setOrigin] = useState<Point | null>(null)
   const [paying, setPaying] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -70,6 +74,20 @@ export function Component() {
     }
   }
 
+  async function cancelWaitingOrder() {
+    if (!order?.id) return
+    setCancelling(true)
+    try {
+      await cancelUnassignedOrder(order.id)
+      setCancelDialogOpen(false)
+      toast.success('Order cancelled. Your refund is now waiting for admin processing.')
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : 'Unable to cancel this order.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   const destination = order?.delivery_latitude != null && order.delivery_longitude != null
     ? { latitude: order.delivery_latitude, longitude: order.delivery_longitude }
     : null
@@ -94,6 +112,34 @@ export function Component() {
       )}
       {paymentError && <p role="alert" className="text-sm text-destructive">{paymentError}</p>}
       {error && <p role="alert">{error}</p>}
+
+      {order?.status === 'ready_for_pickup' && !order.rider_id && order.payment_status === 'paid' && (
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-amber-900">We’re still looking for an available rider. Your order remains in the dispatch queue, and this page will update when one is assigned.</p>
+          <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={cancelling} className="shrink-0">Cancel order</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+                <AlertDialogDescription>The order will be cancelled because no rider has been assigned. Your payment will be placed in the refund queue for admin processing.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep order</AlertDialogCancel>
+                <AlertDialogAction onClick={(event) => { event.preventDefault(); void cancelWaitingOrder() }}>
+                  {cancelling ? 'Cancelling…' : 'Cancel order and request refund'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+      {order?.status === 'cancelled' && order.payment_status === 'refund_pending' && (
+        <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900">
+          Your order has been cancelled. The refund request is in the admin queue and will be processed through Paystack.
+        </div>
+      )}
 
       <section aria-label="Rider delivery position" className="space-y-7 rounded-2xl border bg-card p-6 sm:p-8">
         <div className="flex items-center justify-between gap-3 text-sm font-medium">
@@ -126,7 +172,9 @@ export function Component() {
         <p role="status" className="text-center text-sm text-muted-foreground">
           {order?.status === 'delivered'
             ? 'Your delivery has arrived.'
-            : progress != null
+            : order?.status === 'ready_for_pickup' && !order.rider_id
+              ? 'Your order is ready. We’re looking for an available rider.'
+              : progress != null
               ? `Your rider is about ${progress}% of the way to you.`
               : !order?.rider_id
                 ? 'Waiting for a rider to be assigned.'

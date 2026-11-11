@@ -213,6 +213,55 @@ export async function refundOrder(orderId: string): Promise<void> {
   if (data?.error) throw new Error(data.error)
 }
 
+export type AdminUnassignedDispatchOrder = {
+  id: string
+  customer: string
+  vendor: string
+  address: string
+  createdAt: string
+}
+
+export async function getUnassignedDispatchOrders(): Promise<AdminUnassignedDispatchOrder[]> {
+  const { data, error } = await requireSupabase()
+    .from('orders')
+    .select('id, delivery_address, created_at, customer:profiles!orders_customer_id_fkey(full_name), vendor:vendors(name)')
+    .eq('status', 'ready_for_pickup')
+    .is('rider_id', null)
+    .eq('payment_status', 'paid')
+    .order('created_at', { ascending: true })
+  throwOnError(error)
+  return (data ?? []).map((order) => ({
+    id: order.id,
+    customer: order.customer?.full_name ?? 'Customer',
+    vendor: order.vendor?.name ?? 'Restaurant',
+    address: order.delivery_address,
+    createdAt: order.created_at,
+  }))
+}
+
+export async function getApprovedRidersForManualAssignment(): Promise<{ id: string; name: string; phone: string | null; online: boolean }[]> {
+  const { data, error } = await requireSupabase()
+    .from('riders')
+    .select('owner_id, is_online, profile:profiles!riders_owner_id_fkey(full_name, phone)')
+    .eq('status', 'approved')
+    .order('is_online', { ascending: false })
+  throwOnError(error)
+  return (data ?? []).map((rider) => ({
+    id: rider.owner_id,
+    name: rider.profile?.full_name ?? 'Rider',
+    phone: rider.profile?.phone ?? null,
+    online: rider.is_online,
+  }))
+}
+
+export async function manuallyAssignRider(orderId: string, riderOwnerId: string): Promise<void> {
+  const { error } = await requireSupabase().rpc('admin_assign_rider', {
+    target_order_id: orderId,
+    target_rider_owner_id: riderOwnerId,
+  })
+  throwOnError(error)
+}
+
 export type AdminVendorDetail = {
   id: string
   ownerId: string

@@ -65,3 +65,10 @@ export async function verifyPayment(reference: string): Promise<{ verified: bool
     cartGroupId: data.cart_group_id,
   }
 }
+
+export async function cancelUnassignedOrder(orderId: string): Promise<void> {
+  const { error } = await requireSupabase().rpc('cancel_unassigned_order', {
+    target_order_id: orderId,
+  })
+  if (error) throw new Error(error.message || 'Unable to cancel this order.')
+}

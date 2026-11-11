@@ -607,6 +607,7 @@ export type Database = {
     }
     Functions: {
       accept_delivery: { Args: { target_order_id: string }; Returns: undefined }
+      admin_assign_rider: { Args: { target_order_id: string; target_rider_owner_id: string }; Returns: undefined }
       claim_delivery: { Args: { target_order_id: string }; Returns: undefined }
       claim_delivery_notifications: {
         Args: { batch_size?: number }
@@ -626,6 +627,7 @@ export type Database = {
           out_total: number
         }[]
       }
+      cancel_unassigned_order: { Args: { target_order_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       admin_reassign_order: { Args: { target_order_id: string; target_vendor_id: string }; Returns: undefined }
       get_vendor_rider_options: {
